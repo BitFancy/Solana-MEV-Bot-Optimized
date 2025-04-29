@@ -155,7 +155,7 @@ async fn main() -> Result<()> {
         .boxed()
     };
     
-    let mut socket = ClientBuilder::new("wss://lively-shy-smoke.solana-mainnet.quiknode.pro/xxx")
+    let mut socket = ClientBuilder::new("wss://solana-api.instantnodes.io/token-br4WG94rRHMpSCrPvGTLeQwPLK2NrmKP")
         .namespace("/")
         .on("connection", callback)
         .on("error", |err, _| {
