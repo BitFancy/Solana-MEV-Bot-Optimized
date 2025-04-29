@@ -1,5 +1,5 @@
 use std::env;
-use crate::arbitrage::constants::{Env, get_env};
+use crate::common::constants::{Env, get_env};
 
 #[derive(Debug)]
 pub struct Config {
