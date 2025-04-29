@@ -157,7 +157,7 @@ async fn main() -> Result<()> {
     };
     
     let config = Config::new();
-    let ws_url = format!("{}?api-key={}", config.env.wss_rpc_url, "680b2a8f-92d4-4809-8a47-75eaa73421a2");
+    let ws_url = format!("wss://mainnet.helius-rpc.com/?api-key={}", "680b2a8f-92d4-4809-8a47-75eaa73421a2");
     
     let mut socket = ClientBuilder::new(&ws_url)
         .namespace("/")
