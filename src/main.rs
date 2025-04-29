@@ -156,10 +156,10 @@ async fn main() -> Result<()> {
         .boxed()
     };
     
-    let config = Config::new();
-    let ws_url = format!("wss://mainnet.helius-rpc.com/?api-key={}", "680b2a8f-92d4-4809-8a47-75eaa73421a2");
+    // let config = Config::new();
+    // let ws_url = format!("wss://mainnet.helius-rpc.com/?api-key={}", "680b2a8f-92d4-4809-8a47-75eaa73421a2");
     
-    let mut socket = ClientBuilder::new(&ws_url)
+    let mut socket = ClientBuilder::new("http://localhost:3000")
         .namespace("/")
         .on("connection", callback)
         .on("error", |err, _| {
