@@ -17,8 +17,7 @@ use MEV_Bot_Solana::transactions::create_transaction::{create_ata_extendlut_tran
 use MEV_Bot_Solana::{common::constants::Env, transactions::create_transaction::create_and_send_swap_transaction};
 use MEV_Bot_Solana::common::utils::{from_str, get_tokens_infos, setup_logger};
 use MEV_Bot_Solana::arbitrage::types::{SwapPathResult, SwapPathSelected, SwapRouteSimulation, TokenInArb, TokenInfos, VecSwapPathSelected};
-use MEV_Bot_Solana::common::config::Config;
-use rust_socketio::{Payload, asynchronous::{Client, ClientBuilder}};
+use rust_socketio::{Payload, asynchronous::{Client, ClientBuilder},};
 
 
 use tokio::net::TcpStream;
@@ -155,9 +154,6 @@ async fn main() -> Result<()> {
         }
         .boxed()
     };
-    
-    // let config = Config::new();
-    // let ws_url = format!("wss://mainnet.helius-rpc.com/?api-key={}", "680b2a8f-92d4-4809-8a47-75eaa73421a2");
     
     let mut socket = ClientBuilder::new("http://localhost:3000")
         .namespace("/")
