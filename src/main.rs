@@ -17,7 +17,8 @@ use MEV_Bot_Solana::transactions::create_transaction::{create_ata_extendlut_tran
 use MEV_Bot_Solana::{common::constants::Env, transactions::create_transaction::create_and_send_swap_transaction};
 use MEV_Bot_Solana::common::utils::{from_str, get_tokens_infos, setup_logger};
 use MEV_Bot_Solana::arbitrage::types::{SwapPathResult, SwapPathSelected, SwapRouteSimulation, TokenInArb, TokenInfos, VecSwapPathSelected};
-use rust_socketio::{Payload, asynchronous::{Client, ClientBuilder},};
+use MEV_Bot_Solana::common::config::Config;
+use rust_socketio::{Payload, asynchronous::{Client, ClientBuilder}};
 
 
 use tokio::net::TcpStream;
@@ -155,7 +156,10 @@ async fn main() -> Result<()> {
         .boxed()
     };
     
-    let mut socket = ClientBuilder::new("wss://solana-api.instantnodes.io/token-br4WG94rRHMpSCrPvGTLeQwPLK2NrmKP")
+    let config = Config::new();
+    let ws_url = format!("{}?token={}", config.env.wss_rpc_url, "br4WG94rRHMpSCrPvGTLeQwPLK2NrmKP");
+    
+    let mut socket = ClientBuilder::new(&ws_url)
         .namespace("/")
         .on("connection", callback)
         .on("error", |err, _| {
