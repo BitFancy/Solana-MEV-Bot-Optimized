@@ -1,0 +1,16 @@
+/target
+/cache
+/src/markets/cache/orca_whirpools-markets.json
+/src/markets/cache/orca-markets.json
+/src/markets/cache/raydium-markets.json
+/src/markets/cache/raydiumclmm-markets.json
+/logs
+/results
+/node_modules
+/history
+.env
+PseudoCode.md
+src/markets/cache/meteora-markets.json
+best_paths_selected/*
+optimism_transactions/*
+src/transactions/cache/pda_list.json
