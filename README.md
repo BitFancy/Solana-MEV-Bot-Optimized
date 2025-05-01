@@ -22,10 +22,7 @@ Ensure you have the following installed:
    cd solana-mev-bot-optimized-mine
    ```
 
-2. Build the project:
-   ```bash
-   cargo build --release
-   ```
+ 
 
 3. Configure your environment:
    - Create a `.env` file in the root directory and add your Solana wallet private key and RPC link:
