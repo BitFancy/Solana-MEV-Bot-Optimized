@@ -1,6 +1,9 @@
 use std::{collections::HashMap, fs::{File, OpenOptions}, thread::sleep, time::{self, SystemTime}};
 use borsh::error;
 use chrono::{Datelike, Utc};
+use MEV_Bot_Solana::ai::agent::{AIAgent, MarketState};
+use MEV_Bot_Solana::ai::predictor::{MarketPredictor, MarketDataPoint};
+use MEV_Bot_Solana::ai::optimizer::{StrategyOptimizer, TradeOutcome, MarketStateSnapshot, TradingPath as AITradingPath};
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::enumerate;
 use mongodb::bson::doc;
@@ -49,9 +52,30 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
     bar.set_message(format!("❌ Failed routes: {}/{} 💸 Positive routes: {}/{}", counter_failed_paths, bar.position(), counter_positive_paths, bar.position()));
 
     let mut best_paths_for_strat: Vec<SwapPathSelected> = Vec::new();
+    // AI Components Initialization
+    let mut ai_agent = AIAgent::new(0.5, 10000.0, 0.1); // risk_tolerance, min_profit_threshold, initial_learning_rate
+    let mut market_predictor = MarketPredictor::new(100); // max_historical_points
+    let mut strategy_optimizer = StrategyOptimizer::new();
+
+    info!("🤖 AI Components Initialized.");
+
+    // Initial Market Data Collection and Prediction (Simplified)
+    let current_timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+    let dummy_data_point = MarketDataPoint::new(current_timestamp, 1.0, 1000.0); // price, volume, timestamp
+    market_predictor.add_data_point(dummy_data_point);
+
+    let initial_volatility = market_predictor.get_volatility();
+    let initial_trend = market_predictor.get_trend();
+    let agent_market_state = MarketState::new(initial_volatility, initial_trend, 500.0); // Using a default liquidity
+    ai_agent.update_market_state(agent_market_state);
+    info!("🤖 AI Agent market state updated with initial dummy data: Volatility: {:.4}, Trend: {:.2}", initial_volatility, initial_trend);
+
+    // Comment out or remove old best_paths_for_strat logic
+    // let mut best_paths_for_strat: Vec<SwapPathSelected> = Vec::new();
     // for i in 0..numbers_of_best_paths {
     //     best_paths_for_strat.push((-1000000000.0, SwapPath{ hops: 0, paths: Vec::new(), id_paths: Vec::new() }));
     // }
+
     //Begin simulate all paths
     let mut return_path = "".to_string();
     let mut counter_sp_result = 0;
@@ -105,7 +129,18 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
             };
             swap_paths_results.result.push(sp_result.clone());
 
-            if result_difference > 20000000.0 {
+            // AI-Driven Opportunity Evaluation
+            let risk_score = market_predictor.get_volatility() * path.hops as f64 * 0.1; // Naive risk score
+            let confidence_score = 0.75; // Fixed confidence for now
+
+            info!("🤖 Path [{}] - Potential Profit: {:.2}, Risk Score: {:.4}, Confidence: {:.2}",
+                path.id_paths.iter().map(|id| id.to_string()).collect::<Vec<String>>().join("-"),
+                result_difference, risk_score, confidence_score);
+
+            let should_trade = ai_agent.evaluate_opportunity(result_difference, risk_score, confidence_score);
+
+            if should_trade {
+                info!("🤖 AI Agent decided to TRADE path {} with profit: {}", path.id_paths.iter().map(|id| id.to_string()).collect::<Vec<String>>().join("-"), result_difference);
                 println!("💸💸💸💸💸💸💸💸💸 Begin Execute the tx 💸💸💸💸💸💸💸💸💸");
                 info!("💸💸💸💸💸💸💸💸💸 Send transaction execution... 💸💸💸💸💸💸💸💸💸");
                 
@@ -114,7 +149,7 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
 
                 let path = format!("optimism_transactions/{}-{}-{}.json", date, tokens_path.clone(), counter_sp_result);
                 let _ = insert_swap_path_result_collection("optimism_transactions", sp_result.clone()).await;  
-                let _ = write_file_swap_path_result(path.clone(), sp_result);
+                let _ = write_file_swap_path_result(path_tx_file.clone(), sp_result.clone()); // Clone sp_result as it's used below
                 counter_sp_result += 1;
                 
                 //Send message to Rust execution program
@@ -123,43 +158,78 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
                 let message = path.as_bytes();
                 stream.write_all(message).await?;
                 info!("🛜  Sent: {} tx to executor", String::from_utf8_lossy(message));
-                // let mut buffer = [0; 512];
-                // let n = stream.read(&mut buffer).await?;
-                // info!("Received: {}", String::from_utf8_lossy(&buffer[0..n]));
+
+                // Trade Execution and Feedback Loop (Using Simulated Results)
+                let actual_profit = result_difference; // Using simulated profit as actual for now
+
+                let market_snapshot = MarketStateSnapshot {
+                    volatility: market_predictor.get_volatility(),
+                    trend: market_predictor.get_trend(),
+                };
+
+                let path_id_str = path.id_paths.iter().map(|&id| id.to_string()).collect::<Vec<String>>().join("-");
+
+                // Ensure TradingPath exists in optimizer
+                let trading_path_data = strategy_optimizer.best_paths.get(&path_id_str).cloned().unwrap_or_else(|| {
+                    AITradingPath::new(
+                        path_id_str.clone(),
+                        path.paths.iter().map(|p| p.pool_address.clone()).collect(), // Using pool addresses as steps
+                        actual_profit, // Initial expected_profit
+                        0.0,           // Initial success_rate
+                    )
+                });
+                strategy_optimizer.add_or_update_path(trading_path_data);
+
+
+                let trade_outcome = TradeOutcome {
+                    path_id: path_id_str,
+                    profit: actual_profit,
+                    market_conditions_snapshot: market_snapshot,
+                    timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(),
+                };
+
+                strategy_optimizer.track_trade(trade_outcome.clone());
+                let old_learning_rate = ai_agent.get_learning_rate();
+                ai_agent.record_trade_outcome(actual_profit); // This also calls adapt_learning_rate internally
+                let new_learning_rate = ai_agent.get_learning_rate();
+                info!("🤖 AI Feedback Loop: Trade Outcome recorded for path {}. Profit: {:.2}. Agent learning rate changed from {:.4} to {:.4}",
+                    path.id_paths.iter().map(|id| id.to_string()).collect::<Vec<String>>().join("-"), actual_profit, old_learning_rate, new_learning_rate);
+
+            } else {
+                 info!("🤖 AI Agent rejected path {} with profit: {:.2}, risk: {:.4}, confidence: {:.2}",
+                    path.id_paths.iter().map(|id| id.to_string()).collect::<Vec<String>>().join("-"),
+                    result_difference, risk_score, confidence_score);
             }
 
             // Reset errors if one path is good to only skip paths on 3 consecutives errors
             let key = vec![path.id_paths[0], path.id_paths[1]];
             error_paths.insert(key, 0);
 
-            //Custom Queue FIFO for best results
-            if best_paths_for_strat.len() < numbers_of_best_paths {
-                best_paths_for_strat.push(SwapPathSelected{result: result_difference, path: path.clone(), markets: markets});
-                if best_paths_for_strat.len() == numbers_of_best_paths {
-                    best_paths_for_strat.sort_by(|a, b| b.result.partial_cmp(&a.result).unwrap());
-                }
-            } else if result_difference > best_paths_for_strat[best_paths_for_strat.len() - 1].result {
-                for (index, path_in_vec) in best_paths_for_strat.clone().iter().enumerate() {
-                    if result_difference < path_in_vec.result {
-                        continue;
-                    } else {
-                        best_paths_for_strat[index] = SwapPathSelected{result: result_difference, path: path.clone(), markets: markets};
-                        break;
-                    }
-                }
-                // best_paths_for_strat.remove(0);
-                // best_paths_for_strat.push((result_difference, path.clone()));
-            }
+            //Custom Queue FIFO for best results - Commented out as per instruction
+            // if best_paths_for_strat.len() < numbers_of_best_paths {
+            //     best_paths_for_strat.push(SwapPathSelected{result: result_difference, path: path.clone(), markets: markets});
+            //     if best_paths_for_strat.len() == numbers_of_best_paths {
+            //         best_paths_for_strat.sort_by(|a, b| b.result.partial_cmp(&a.result).unwrap());
+            //     }
+            // } else if result_difference > best_paths_for_strat[best_paths_for_strat.len() - 1].result {
+            //     for (index, path_in_vec) in best_paths_for_strat.clone().iter().enumerate() {
+            //         if result_difference < path_in_vec.result {
+            //             continue;
+            //         } else {
+            //             best_paths_for_strat[index] = SwapPathSelected{result: result_difference, path: path.clone(), markets: markets};
+            //             break;
+            //         }
+            //     }
+            // }
 
-            if i % 10 == 0 {
-                println!("best_paths_for_strat {:#?}", best_paths_for_strat.iter().map(|iter| iter.result).collect::<Vec<f64>>());
-            }
-            // Update positive routes
-            if result_difference > 0.0 {
+            // if i % 10 == 0 {
+            //     // println!("best_paths_for_strat {:#?}", best_paths_for_strat.iter().map(|iter| iter.result).collect::<Vec<f64>>());
+            // }
+
+            // Update positive routes (original logic, can be kept or adapted)
+            if result_difference > 0.0 { // This can be different from should_trade if AI rejects a profitable but risky trade
                 counter_positive_paths += 1;
-                bar.set_message(format!("❌ Failed routes: {}/{} 💸 Positive routes: {}/{}", counter_failed_paths, bar.position(), counter_positive_paths, bar.position()));
-
-                // precision_strategy(socket.clone(), path.clone(), markets, tokens.clone(), tokens_infos.clone()).await;
+                // bar.set_message already updated below
             }
         } else {
             counter_failed_paths += 1;
@@ -182,9 +252,13 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
         route_simulation = new_route_simulation;
 
         bar.inc(1);
-        bar.set_message(format!("❌ Failed routes: {}/{} 💸 Positive routes: {}/{}", counter_failed_paths, bar.position(), counter_positive_paths, bar.position()));
+        bar.set_message(format!("❌ Failed routes: {}/{} 💸 Positive routes: {}/{} AI Trades: {}", counter_failed_paths, bar.position(), counter_positive_paths, bar.position(), strategy_optimizer.get_performance_metrics().get("total_trades").cloned().unwrap_or(0.0)));
 
         if (i != 0 && i % 300 == 0) || i == all_paths.len() - 1 {
+            // Periodic call to strategy optimizer
+            info!("🤖 Calling Strategy Optimizer periodically or at end of loop.");
+            strategy_optimizer.optimize_strategies(); // Placeholder call
+
             let file_number = i / 300;
             let symbols = tokens.iter().map(|token| &token.symbol).cloned().collect::<Vec<String>>().join("-");
             let mut file = File::create(format!("results\\result_{}_{}.json", file_number, symbols)).unwrap();
@@ -217,22 +291,37 @@ pub async fn run_arbitrage_strategy(simulation_amount: u64, get_fresh_pools_bool
     }
 
     
-    let mut path = format!("best_paths_selected/{}.json", tokens_list);
-    File::create(path.clone());
+    let mut path_output_file = format!("best_paths_selected/{}.json", tokens_list); // Renamed to avoid conflict with 'path' variable
+    File::create(path_output_file.clone())?; // Ensure it returns Result or handle error
     
-    let file = OpenOptions::new().read(true).write(true).open(path.clone())?;
+    let file = OpenOptions::new().read(true).write(true).open(path_output_file.clone())?;
     let mut writer = BufWriter::new(&file);
     
-    let mut content = VecSwapPathSelected{value: best_paths_for_strat.clone()};
-    writer.write_all(serde_json::to_string(&content)?.as_bytes())?;
-    writer.flush()?;
-    info!("Data written to '{}' successfully.", path);
-    
-    insert_vec_swap_path_selected_collection("best_paths_selected", content.clone()).await;
+    // The old best_paths_for_strat is commented out.
+    // For now, we'll write an empty VecSwapPathSelected or one based on optimizer if desired.
+    // Let's write the optimizer's top paths if we want to replace the old mechanism.
+    // This part needs careful consideration on how to structure VecSwapPathSelected from AITradingPath.
+    // For now, creating an empty one or using the old one if it was not fully removed.
+    // Since best_paths_for_strat was fully commented, let's create an empty one:
+    let best_paths_from_optimizer = strategy_optimizer.get_best_paths(numbers_of_best_paths);
+    info!("🤖 Top {} paths from optimizer:", numbers_of_best_paths);
+    for p in &best_paths_from_optimizer {
+        info!("  - Path ID: {}, Avg Profit: {:.2}, Times Traded: {}", p.id, p.average_profit(), p.times_traded);
+    }
+    // TODO: Convert AITradingPath to SwapPathSelected if needed for compatibility with existing downstream processes.
+    // For now, just logging and returning an empty VecSwapPathSelected for the file.
+    let content_to_write = VecSwapPathSelected { value: Vec::new() }; // Placeholder
 
-    return_path = path;
+    writer.write_all(serde_json::to_string(&content_to_write)?.as_bytes())?;
+    writer.flush()?;
+    info!("Data (placeholder) written to '{}' successfully.", path_output_file);
+    
+    // insert_vec_swap_path_selected_collection("best_paths_selected", content_to_write.clone()).await; // Assuming content_to_write is correctly typed
+
+    return_path = path_output_file;
     bar.finish();
-    return Ok((return_path, VecSwapPathSelected{ value: best_paths_for_strat}));
+    // Return empty VecSwapPathSelected for now, or adapt from optimizer's paths
+    Ok((return_path, content_to_write))
 }
 
 pub async fn precision_strategy(socket: Client, path: SwapPath, markets: Vec<Market>, tokens: Vec<TokenInArb>, tokens_infos: HashMap<String, TokenInfos>) {

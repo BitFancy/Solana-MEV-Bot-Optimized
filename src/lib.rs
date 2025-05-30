@@ -4,10 +4,16 @@ pub mod markets;
 pub mod arbitrage;
 pub mod transactions;
 pub mod data;
+pub mod ai;
+pub mod data_pipeline;
+pub mod backtester;
 
 use std::env;
 
 mod tests {
+    #[cfg(test)] // Keep existing tests under cfg(test) if they are, or apply generally
+    mod ai_simulation_tests; // Add the new test module here
+
     use solana_sdk::pubkey::Pubkey;
 
     use crate::{arbitrage::types::{SwapPathResult, SwapRouteSimulation, TokenInArb}, common::utils::from_str, markets::types::DexLabel, transactions::create_transaction::{create_ata_extendlut_transaction, write_lut_for_market, ChainType, SendOrSimulate}};

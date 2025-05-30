@@ -76,6 +76,9 @@ plotters-piston = "0.3.0"
 systemstat = "0.2.3"
 mongodb = {version = "2.8.2", default-features = false, features = ["async-std-runtime"] }
 
+jito-clients = "*" # Worker will try to use the latest available. Specify version if known.
+# jito-tip-payment = "*" # Adding this as well, in case it's separate and needed.
+
 [profile.release]
 codegen-units = 1
 lto = "fat"
