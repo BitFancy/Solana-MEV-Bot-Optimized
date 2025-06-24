@@ -209,13 +209,10 @@ pub struct SwapConfig {
     pub use_jito: bool,
 }
 
-pub fn import_env_var(key: &str) -> String {
-    match env::var(key){
-        Ok(res) => res,
-        Err(e) => {
-            println!("{}", format!("{}: {}", e, key).red().to_string());
-            loop{}
-        }
+pub fn import_env_var(key: &str) -> Option<String> {
+    match env::var(key) {
+        Ok(res) => Some(res),
+        Err(_) => None,
     }
 }
 
