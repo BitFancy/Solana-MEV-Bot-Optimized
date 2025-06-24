@@ -48,8 +48,8 @@ Ensure you have the following installed:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/BitFancy/solana-mev-bot-optimized-mine.git
-   cd solana-mev-bot-optimized-mine
+   git clone https://github.com/BitFancy/solana-mev-bot-optimized.git
+   cd solana-mev-bot-optimized
    ```
 
 2. Build the project:
