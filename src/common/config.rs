@@ -38,8 +38,14 @@ impl Config {
 
             let logger = Logger::new("[INIT] => ".blue().bold().to_string());
 
-            let yellowstone_grpc_http = import_env_var("YELLOWSTONE_GRPC_HTTP");
-            let yellowstone_grpc_token = import_env_var("YELLOWSTONE_GRPC_TOKEN");
+            let yellowstone_grpc_http = import_env_var("YELLOWSTONE_GRPC_HTTP")
+            .unwrap_or_else(|| "http://localhost:50051".to_string());
+        
+            let yellowstone_grpc_token = import_env_var("YELLOWSTONE_GRPC_TOKEN")
+            .unwrap_or_else(|| {
+                eprintln!("Warning: YELLOWSTONE_GRPC_TOKEN not set, using empty token");
+                String::new()
+            });
             let slippage_input = import_env_var("SLIPPAGE").parse::<u64>().unwrap_or(0);
             let counter_limit = import_env_var("COUNTER").parse::<u32>().unwrap_or(0_u32);
             let max_dev_buy = import_env_var("MAX_DEV_BUY").parse::<u32>().unwrap_or(0_u32);
