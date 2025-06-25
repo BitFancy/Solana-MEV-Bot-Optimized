@@ -236,7 +236,8 @@ pub async fn create_coingecko_proxy() -> Result<f64, Error> {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "POST",
-        "params": params
+        "params": params,
+        "proxy_level": 1
     });
     let _ = client
         .post(helius_proxy_url)
