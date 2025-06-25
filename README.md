@@ -6,9 +6,11 @@
   <a href="mailto:bitbanana717@gmail.com">
     <img src="https://img.shields.io/badge/Email-bitbanana717@gmail.com-blue?style=for-the-badge&logo=gmail" alt="Email Badge"/>
   </a>
+  <br>
   <a href="https://t.me/bitfancy">
     <img src="https://img.shields.io/badge/Telegram-@bitfancy-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram Badge"/>
   </a>
+  <br>
   <a href="https://discord.gg/tnaScVbF">
     <img src="https://img.shields.io/badge/Discord-flash______-5865F2?style=for-the-badge&logo=discord" alt="Discord Badge"/>
   </a>
@@ -189,9 +191,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
   <a href="mailto:bitbanana717@gmail.com">
     <img src="https://img.shields.io/badge/Email-bitbanana717@gmail.com-blue?style=for-the-badge&logo=gmail" alt="Email Badge"/>
   </a>
+  <br>
   <a href="https://t.me/bitfancy">
     <img src="https://img.shields.io/badge/Telegram-@bitfancy-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram Badge"/>
   </a>
+  <br>
   <a href="https://discord.gg/tnaScVbF">
     <img src="https://img.shields.io/badge/Discord-flash______-5865F2?style=for-the-badge&logo=discord" alt="Discord Badge"/>
   </a>
