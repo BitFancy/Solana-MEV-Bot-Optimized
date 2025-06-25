@@ -1,9 +1,22 @@
 # Solana MEV Bot - Advanced Pump.fun Trading Bot
 
-> **Contact Information:**
-> - **Discord:** [flash______]
-> - **Email:** [bitbanana717@gmail.com](mailto:bitbanana717@gmail.com)
-> - **Telegram:** [@bitfancy](https://t.me/bitfancy)
+## 📬 Contact & Support
+
+<p align="center">
+  <a href="mailto:bitbanana717@gmail.com">
+    <img src="https://img.shields.io/badge/Email-bitbanana717@gmail.com-blue?style=for-the-badge&logo=gmail" alt="Email Badge"/>
+  </a>
+  <a href="https://t.me/bitfancy">
+    <img src="https://img.shields.io/badge/Telegram-@bitfancy-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram Badge"/>
+  </a>
+  <a href="https://discord.gg/tnaScVbF">
+    <img src="https://img.shields.io/badge/Discord-flash______-5865F2?style=for-the-badge&logo=discord" alt="Discord Badge"/>
+  </a>
+</p>
+
+<p align="center">
+  <b>For support, questions, or collaboration opportunities, reach out through any of the above channels!</b>
+</p>
 
 A sophisticated **Solana MEV (Maximal Extractable Value) bot** built in Rust, specifically designed for high-frequency trading on Pump.fun tokens with advanced features including Jito bundle support, real-time mempool monitoring, and intelligent arbitrage strategies.
 
@@ -170,9 +183,24 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-> **Contact Information:**
-> - **Discord:** [flash______](https://discord.gg/tnaScVbF)
-> - **Email:** [bitbanana717@gmail.com](mailto:bitbanana717@gmail.com)
-> - **Telegram:** [@bitfancy](https://t.me/bitfancy)
+## 📬 Contact & Support
 
-**For support, questions, or collaboration opportunities, feel free to reach out through any of the above channels.**
+<p align="center">
+  <a href="mailto:bitbanana717@gmail.com">
+    <img src="https://img.shields.io/badge/Email-bitbanana717@gmail.com-blue?style=for-the-badge&logo=gmail" alt="Email Badge"/>
+  </a>
+  <a href="https://t.me/bitfancy">
+    <img src="https://img.shields.io/badge/Telegram-@bitfancy-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram Badge"/>
+  </a>
+  <a href="https://discord.gg/tnaScVbF">
+    <img src="https://img.shields.io/badge/Discord-flash______-5865F2?style=for-the-badge&logo=discord" alt="Discord Badge"/>
+  </a>
+</p>
+
+<p align="center">
+  <b>For support, questions, or collaboration opportunities, reach out through any of the above channels!</b>
+</p>
+
+---
+
+**Disclaimer**: This software is for educational and research purposes. Use at your own risk. The authors are not responsible for any financial losses incurred through the use of this software.

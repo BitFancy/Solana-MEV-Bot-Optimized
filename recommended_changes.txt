@@ -1,1 +1,0 @@
-# Recommended Changes for Debugging Copy Trading Issues
