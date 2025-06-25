@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+solana-client = { version = "2.1.14" }
+solana-account-decoder = "2.1.14"
+solana-program-pack = "2.1.14"
+solana-sdk = { version = "2.1.14" }
+solana-transaction-status  = { version = "2.1.14" }
 dotenv = "0.15"
 chrono = "0.4.26"
 clap = { version = "4.5.7", features = ["derive"] }
@@ -41,3 +46,4 @@ futures-util = "0.3.30"
 maplit = "1.0.2"
 jito-json-rpc-client = { git = "https://github.com/jwest951227/jito-block-engine-json-rpc-client.git", branch="v2.1.1", package = "jito-block-engine-json-rpc-client" }
 futures = "0.3.31"
+teloxide = { version = "0.12", features = ["macros"] }

@@ -1,12 +1,11 @@
 use std::{str::FromStr, sync::Arc, time::Duration};
-
 use anyhow::{anyhow, Result};
 use borsh::from_slice;
 use borsh_derive::{BorshDeserialize, BorshSerialize};
-use chrono::Utc;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use anchor_client::solana_sdk::{
+    hash::Hash,
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::Keypair,
@@ -16,9 +15,11 @@ use anchor_client::solana_sdk::{
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
-use spl_token::{amount_to_ui_amount, ui_amount_to_amount};
-use spl_token_client::token::TokenError;
-use tokio::time::Instant;
+use spl_token::{ui_amount_to_amount};
+use tokio::time::{Instant, sleep};
+use spl_token_client::{
+    token::{TokenError},
+};
 
 use crate::{
     common::{config::SwapConfig, logger::Logger},
@@ -34,13 +35,14 @@ pub const PUMP_GLOBAL: &str = "4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf";
 pub const PUMP_FEE_RECIPIENT: &str = "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM";
 pub const PUMP_PROGRAM: &str = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
 // pub const PUMP_FUN_MINT_AUTHORITY: &str = "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM";
-pub const PUMP_ACCOUNT: &str = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
+pub const PUMP_EVENT_AUTHORITY: &str = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
 pub const PUMP_BUY_METHOD: u64 = 16927863322537952870;
 pub const PUMP_SELL_METHOD: u64 = 12502976635542562355;
 pub const PUMP_FUN_CREATE_IX_DISCRIMINATOR: &[u8] = &[24, 30, 200, 40, 5, 28, 7, 119];
 pub const INITIAL_VIRTUAL_SOL_RESERVES: u64 = 30_000_000_000;
 pub const INITIAL_VIRTUAL_TOKEN_RESERVES: u64 = 1_073_000_000_000_000;
 pub const TOKEN_TOTAL_SUPPLY: u64 = 1_000_000_000_000_000;
+
 
 #[derive(Clone)]
 pub struct Pump {
@@ -62,278 +64,367 @@ impl Pump {
         }
     }
 
-    pub async fn build_swap_ixn_by_mint(
-        &self,
-        mint_str: &str,
-        bonding_curve_info: Option<BondingCurveInfo>,
-        swap_config: SwapConfig,
-        start_time: Instant,
-    ) -> Result<(Arc<Keypair>, Vec<Instruction>, f64)> {
-        let logger = Logger::new("[PUMPFUN-SWAP-BY-MINT] => ".blue().to_string());
-        // logger.log(
-        //     format!(
-        //         "[SWAP({:?})-BEGIN]({}) - {} :: {:?}",
-        //         swap_config.swap_direction,
-        //         mint_str,
-        //         chrono::Utc::now(),
-        //         start_time.elapsed()
-        //     )
-        //     .yellow()
-        //     .to_string(),
-        // );
-        // Constants
-        // ---------------------------------------------------
-        let slippage_bps = swap_config.slippage * 100;
-        let owner = self.keypair.pubkey();
-        let mint = Pubkey::from_str(mint_str).map_err(|_| anyhow!(""))?;
-        let program_id = spl_token::ID;
-        let native_mint = spl_token::native_mint::ID;
-        let (token_in, token_out, pump_method) = match swap_config.swap_direction {
-            SwapDirection::Buy => (native_mint, mint, PUMP_BUY_METHOD),
-            SwapDirection::Sell => (mint, native_mint, PUMP_SELL_METHOD),
-        };
+    pub async fn get_token_price(&self, mint_str: &str) -> Result<f64> {
+        let mint = Pubkey::from_str(mint_str).map_err(|_| anyhow!("Invalid mint address"))?;
         let pump_program = Pubkey::from_str(PUMP_PROGRAM)?;
+        
+        // Get the bonding curve account info
+        let (_, _, bonding_curve_reserves) = get_bonding_curve_account(
+            self.rpc_client.clone().unwrap(), 
+            mint, 
+            pump_program
+        ).await?;
+        
+        // Calculate price using the virtual reserves
+        let virtual_sol_reserves = bonding_curve_reserves.virtual_sol_reserves as f64;
+        let virtual_token_reserves = bonding_curve_reserves.virtual_token_reserves as f64;
+        
+        // Price formula: virtual_sol_reserves / virtual_token_reserves
+        // Convert to a reasonable scale
+        let price = virtual_sol_reserves / virtual_token_reserves;
+        
+        Ok(price)
+    }
 
+    // Update the build_swap_from_parsed_data method
+    pub async fn build_swap_from_parsed_data(
+        &self,
+        trade_info: &crate::engine::transaction_parser::TradeInfoFromToken,
+        swap_config: SwapConfig,
+    ) -> Result<(Arc<Keypair>, Vec<Instruction>, f64, Hash)> {
+        let _logger = Logger::new("[PUMPFUN-SWAP-FROM-PARSED] => ".blue().to_string());
+        _logger.log(format!("Building PumpFun swap from parsed transaction data"));
+        
+        // Basic validation - ensure we have a PumpFun transaction
+        if trade_info.dex_type != crate::engine::transaction_parser::DexType::PumpFun {
+            return Err(anyhow!("Invalid transaction type, expected PumpFun"));
+        }
+        
+        // Extract the essential data
+        let mint_str = &trade_info.mint;
+        let owner = self.keypair.pubkey();
+        let token_program_id = spl_token::ID;
+        let native_mint = spl_token::native_mint::ID;
+        
+        // Get a fresh recent blockhash from RPC
+        let recent_blockhash = self.rpc_client.clone().unwrap()
+            .get_latest_blockhash()
+            .map_err(|e| anyhow!("Failed to get recent blockhash: {}", e))?;
+        _logger.log(format!("Using fresh blockhash: {}", recent_blockhash));
+        
+        // Determine if this is a buy or sell operation
+        let (token_in, token_out, pump_method) = match swap_config.swap_direction {
+            SwapDirection::Buy => (native_mint, Pubkey::from_str(mint_str)?, PUMP_BUY_METHOD),
+            SwapDirection::Sell => (Pubkey::from_str(mint_str)?, native_mint, PUMP_SELL_METHOD),
+        };
+        
+        // Get virtual reserves from parsed data or use defaults
+        let virtual_sol_reserves = trade_info.virtual_sol_reserves.unwrap_or(INITIAL_VIRTUAL_SOL_RESERVES);
+        let virtual_token_reserves = trade_info.virtual_token_reserves.unwrap_or(INITIAL_VIRTUAL_TOKEN_RESERVES);
+        
+        _logger.log(format!("Virtual SOL reserves: {}, Virtual token reserves: {}", 
+                         virtual_sol_reserves, virtual_token_reserves));
+        
+        // Use slippage directly as basis points (already u64)
+        let slippage_bps = swap_config.slippage;
+        
+        // Get pump program ID
+        let pump_program = Pubkey::from_str(PUMP_PROGRAM)?;
+        
+        // Get bonding curve info
+        let (bonding_curve, associated_bonding_curve, _bonding_curve_reserves) = 
+            if let Some(bonding_curve_info) = &trade_info.bonding_curve_info {
+                get_bonding_curve_account_by_calc(bonding_curve_info.clone(), Pubkey::from_str(mint_str)?)
+            } else {
+                // If we don't have bonding curve info from parsed data, fetch it
+                _logger.log("No bonding curve info in parsed data, fetching from RPC".to_string());
+                get_bonding_curve_account(self.rpc_client.clone().unwrap(), Pubkey::from_str(mint_str)?, pump_program).await?
+            };
+        
+        // Create instructions as needed
         let mut create_instruction = None;
         let mut close_instruction = None;
-
-        // RPC requests
-        // ---------------------------------------------------
-        // let nonblocking_clinet_clone = self.rpc_nonblocking_client.clone();
-        // let bonding_curve_handle = tokio::spawn(get_bonding_curve_account(
-        //     self.rpc_client.clone().unwrap(),
-        //     mint,
-        //     pump_program,
-        // ));
-        // let blockhash_handle =
-        //     tokio::spawn(async move { nonblocking_clinet_clone.get_latest_blockhash().await });
         
-        let (bonding_curve, associated_bonding_curve, bonding_curve_reserves) =
-            if let Some(bonding_curve_info) = bonding_curve_info {
-                get_bonding_curve_account_by_calc(bonding_curve_info, mint)
-            } else {
-                get_bonding_curve_account(self.rpc_client.clone().unwrap(), mint, pump_program).await?
-            };
-
-        // Calculate tokens out
-        let virtual_sol_reserves = bonding_curve_reserves.virtual_sol_reserves as u128;
-        let virtual_token_reserves = bonding_curve_reserves.virtual_token_reserves as u128;
-
-        let in_ata = token::get_associated_token_address(
-            self.rpc_nonblocking_client.clone(),
-            self.keypair.clone(),
-            &token_in,
-            &owner,
-        );
-
-        let out_ata = token::get_associated_token_address(
-            self.rpc_nonblocking_client.clone(),
-            self.keypair.clone(),
-            &token_out,
-            &owner,
-        );
-
-        let (amount_specified, _amount_ui_pretty) = match swap_config.swap_direction {
-            SwapDirection::Buy => {
-                // Create base ATA if it doesn't exist.
-                // ----------------------------
-                match token::get_account_info(
-                    self.rpc_nonblocking_client.clone(),
-                    token_out,
-                    out_ata,
-                )
-                .await
-                {
-                    Ok(_) => {
-                        // Base ata exists. skipping creation..
-                        // --------------------------
-                    }
-                    Err(TokenError::AccountNotFound) | Err(TokenError::AccountInvalidOwner) => {
-                        // "Base ATA for mint {} does not exist. will be create", token_out
-                        // --------------------------
-                        create_instruction = Some(create_associated_token_account(
-                            &owner,
-                            &owner,
-                            &token_out,
-                            &program_id,
-                        ));
-                    }
-                    Err(_) => {
-                        // Error retrieving out ATA
-                        // ---------------------------
+        // Handle token accounts based on direction (buy or sell)
+        let in_ata = get_associated_token_address(&owner, &token_in);
+        let out_ata = get_associated_token_address(&owner, &token_out);
+        
+        // Check if accounts exist and create if needed
+        if swap_config.swap_direction == SwapDirection::Buy {
+            // Check if token account exists
+            let out_ata_exists = async {
+                let max_retries = 3;
+                let mut retry_count = 0;
+                
+                while retry_count < max_retries {
+                    match token::get_account_info(
+                        self.rpc_nonblocking_client.clone(),
+                        token_out,
+                        out_ata,
+                    ).await {
+                        Ok(_) => return true,
+                        Err(TokenError::AccountNotFound) | Err(TokenError::AccountInvalidOwner) => return false,
+                        Err(_) => {
+                            retry_count += 1;
+                            if retry_count < max_retries {
+                                sleep(Duration::from_millis(200)).await;
+                            }
+                        }
                     }
                 }
-                (
-                    ui_amount_to_amount(swap_config.amount_in, spl_token::native_mint::DECIMALS),
-                    (swap_config.amount_in, spl_token::native_mint::DECIMALS),
-                )
+                false
+            }.await;
+            
+            if !out_ata_exists {
+                create_instruction = Some(create_associated_token_account(
+                    &owner,
+                    &owner,
+                    &token_out,
+                    &token_program_id,
+                ));
             }
+        } else {
+            // For sell, check if we have tokens to sell
+            let in_ata_exists = async {
+                let max_retries = 3;
+                let mut retry_count = 0;
+                
+                while retry_count < max_retries {
+                    match token::get_account_info(
+                        self.rpc_nonblocking_client.clone(),
+                        token_in,
+                        in_ata,
+                    ).await {
+                        Ok(_) => return true,
+                        Err(TokenError::AccountNotFound) | Err(TokenError::AccountInvalidOwner) => return false,
+                        Err(_) => {
+                            retry_count += 1;
+                            if retry_count < max_retries {
+                                sleep(Duration::from_millis(200)).await;
+                            }
+                        }
+                    }
+                }
+                false
+            }.await;
+            
+            if !in_ata_exists {
+                return Err(anyhow!("Token ATA does not exist, cannot sell"));
+            }
+            
+            // For sell transactions, determine if it's a full sell
+            if swap_config.in_type == SwapInType::Pct && swap_config.amount_in >= 1.0 {
+                // Close ATA for full sells
+                close_instruction = Some(spl_token::instruction::close_account(
+                    &token_program_id,
+                    &in_ata,
+                    &owner,
+                    &owner,
+                    &[&owner],
+                )?);
+            }
+        }
+        
+        // Determine token amount and SOL threshold based on operation
+        let creator_vault = match swap_config.swap_direction {
+            SwapDirection::Buy => {
+                get_associated_token_address(
+                    &Pubkey::from_str(PUMP_FEE_RECIPIENT)?,
+                    &token_in
+                )
+            },
             SwapDirection::Sell => {
-                let in_account_handle = tokio::spawn(token::get_account_info(
-                    self.rpc_nonblocking_client.clone(),
-                    token_in,
-                    in_ata,
-                ));
-                let in_mint_handle = tokio::spawn(token::get_mint_info(
-                    self.rpc_nonblocking_client.clone(),
-                    self.keypair.clone(),
-                    token_in,
-                ));
-                let (in_account, in_mint) =
-                    match tokio::try_join!(in_account_handle, in_mint_handle) {
-                        Ok((in_account_result, in_mint_result)) => {
-                            let in_account_result = in_account_result?;
-                            let in_mint_result = in_mint_result?;
-                            (in_account_result, in_mint_result)
-                        }
-                        Err(err) => {
-                            logger.log(format!("Failed with {}, ", err).red().to_string());
-                            return Err(anyhow!(format!("{}", err)));
-                        }
-                    };
-                let amount = match swap_config.in_type {
-                    SwapInType::Qty => {
-                        ui_amount_to_amount(swap_config.amount_in, in_mint.base.decimals)
-                    }
-                    SwapInType::Pct => {
-                        let amount_in_pct = swap_config.amount_in.min(1.0);
-                        if amount_in_pct == 1.0 {
-                            // Sell all. will be close ATA for mint {token_in}
-                            // --------------------------------
-                            close_instruction = Some(spl_token::instruction::close_account(
-                                &program_id,
-                                &in_ata,
-                                &owner,
-                                &owner,
-                                &[&owner],
-                            )?);
-                            in_account.base.amount
-                        } else {
-                            (amount_in_pct * 100.0) as u64 * in_account.base.amount / 100
-                        }
-                    }
-                };
-                (
-                    amount,
-                    (
-                        amount_to_ui_amount(amount, in_mint.base.decimals),
-                        in_mint.base.decimals,
-                    ),
+                get_associated_token_address(
+                    &Pubkey::from_str(PUMP_FEE_RECIPIENT)?,
+                    &native_mint
                 )
             }
         };
-
-        let token_price: f64 = (virtual_sol_reserves as f64) / (virtual_token_reserves as f64);
-
-        let (token_amount, sol_amount_threshold, input_accouts) = match swap_config.swap_direction {
+        
+        // Calculate token amount and threshold based on operation type and parsed data
+        let (token_amount, sol_amount_threshold, input_accounts) = match swap_config.swap_direction {
             SwapDirection::Buy => {
-                let max_sol_cost = max_amount_with_slippage(amount_specified, slippage_bps);
-                let amount_result = u128::from(amount_specified)
-                    .checked_mul(virtual_token_reserves)
-                    .expect("Failed to multiply amount_specified by virtual_token_reserves: overflow occurred.")
-                    .checked_div(virtual_sol_reserves)
-                    .expect("Failed to divide the result by virtual_sol_reserves: division by zero or overflow occurred.");
+                // Try to use parsed max_sol_cost or calculate from config
+                let sol_amount = if let Some(max_cost) = trade_info.max_sol_cost {
+                    max_cost // Use parsed value directly
+                } else {
+                    // Calculate from swap_config
+                    ui_amount_to_amount(swap_config.amount_in, spl_token::native_mint::DECIMALS)
+                };
+                
+                // Calculate expected token output using the virtual reserves
+                let available_sol = sol_amount;
+                let available_sol_f64 = available_sol as f64;
+                
+                // Calculate using virtual reserves
+                let virtual_sol_reserves_f64 = virtual_sol_reserves as f64;
+                let virtual_token_reserves_f64 = virtual_token_reserves as f64;
+                
+                // Calculate constant product k
+                let k_f64 = virtual_sol_reserves_f64 * virtual_token_reserves_f64;
+                
+                // Calculate new virtual SOL amount
+                let new_virtual_sol_f64 = virtual_sol_reserves_f64 + available_sol_f64;
+                
+                // Calculate new virtual token amount
+                let new_virtual_tokens_f64 = k_f64 / new_virtual_sol_f64;
+                
+                // Calculate expected tokens out
+                let tokens_out_f64 = virtual_token_reserves_f64 - new_virtual_tokens_f64;
+                
+                // Apply slippage and round down
+                let slippage_factor = 1.0 - (slippage_bps as f64 / 10000.0);
+                let tokens_with_slippage = tokens_out_f64 * slippage_factor;
+                
+                // Use parsed base_amount_out if available, otherwise calculate
+                let min_token_output = if let Some(amount_out) = trade_info.base_amount_out {
+                    amount_out
+                } else {
+                    tokens_with_slippage.floor() as u64
+                };
+                
+                // Return accounts for buy
                 (
-                    amount_result as u64,
-                    max_sol_cost,
+                    available_sol,
+                    min_token_output,
                     vec![
                         AccountMeta::new_readonly(Pubkey::from_str(PUMP_GLOBAL)?, false),
                         AccountMeta::new(Pubkey::from_str(PUMP_FEE_RECIPIENT)?, false),
-                        AccountMeta::new_readonly(mint, false),
+                        AccountMeta::new_readonly(Pubkey::from_str(mint_str)?, false),
                         AccountMeta::new(bonding_curve, false),
                         AccountMeta::new(associated_bonding_curve, false),
                         AccountMeta::new(out_ata, false),
                         AccountMeta::new(owner, true),
                         AccountMeta::new_readonly(system_program::id(), false),
-                        AccountMeta::new_readonly(program_id, false),
-                        AccountMeta::new_readonly(Pubkey::from_str(RENT_PROGRAM)?, false),
-                        AccountMeta::new_readonly(Pubkey::from_str(PUMP_ACCOUNT)?, false),
+                        AccountMeta::new_readonly(token_program_id, false),
+                        AccountMeta::new(creator_vault, false),
+                        AccountMeta::new_readonly(Pubkey::from_str(PUMP_EVENT_AUTHORITY)?, false),
                         AccountMeta::new_readonly(pump_program, false),
-                    ],
+                    ]
                 )
-            }
+            },
             SwapDirection::Sell => {
-                let sol_output = u128::from(amount_specified)
-                .checked_mul(virtual_sol_reserves)
-                .expect("Failed to multiply amount_specified by virtual_sol_reserves: overflow occurred.")
-                .checked_div(virtual_token_reserves)
-                .expect("Failed to divide the result by virtual_token_reserves: division by zero or overflow occurred.");
-                let min_sol_output = min_amount_with_slippage(sol_output as u64, slippage_bps);
-
+                // Get token balance to sell
+                let in_account = token::get_account_info(
+                    self.rpc_nonblocking_client.clone(),
+                    token_in,
+                    in_ata,
+                ).await?;
+                
+                let in_mint = token::get_mint_info(
+                    self.rpc_nonblocking_client.clone(),
+                    self.keypair.clone(),
+                    token_in,
+                ).await?;
+                
+                // Try to use parsed token amount if available
+                let amount = if let Some(token_amount) = trade_info.token_amount {
+                    token_amount
+                } else {
+                    // Otherwise calculate from swap_config
+                    match swap_config.in_type {
+                        SwapInType::Qty => {
+                            ui_amount_to_amount(swap_config.amount_in, in_mint.base.decimals)
+                        },
+                        SwapInType::Pct => {
+                            let amount_in_pct = swap_config.amount_in.min(1.0);
+                            if amount_in_pct == 1.0 {
+                                in_account.base.amount
+                            } else {
+                                (amount_in_pct * 100.0) as u64 * in_account.base.amount / 100
+                            }
+                        }
+                    }
+                };
+                
+                // Validate amount
+                if amount == 0 {
+                    return Err(anyhow!("Amount is zero, cannot sell"));
+                }
+                
+                if amount > in_account.base.amount {
+                    return Err(anyhow!("Sell amount exceeds account balance"));
+                }
+                
+                // Calculate expected SOL output using virtual reserves
+                let virtual_sol_reserves_f64 = virtual_sol_reserves as f64;
+                let virtual_token_reserves_f64 = virtual_token_reserves as f64;
+                let amount_f64 = amount as f64;
+                
+                // Calculate constant product k
+                let k_f64 = virtual_sol_reserves_f64 * virtual_token_reserves_f64;
+                
+                // Calculate new virtual token amount after sell
+                let new_virtual_tokens_f64 = virtual_token_reserves_f64 + amount_f64;
+                
+                // Calculate new virtual SOL amount
+                let new_virtual_sol_f64 = k_f64 / new_virtual_tokens_f64;
+                
+                // Calculate expected SOL out
+                let sol_out_f64 = virtual_sol_reserves_f64 - new_virtual_sol_f64;
+                
+                // Apply slippage and round down
+                let slippage_factor = 1.0 - (slippage_bps as f64 / 10000.0);
+                let sol_with_slippage = sol_out_f64 * slippage_factor;
+                
+                // Use parsed min_sol_output if available, otherwise calculate
+                let min_sol_output = if let Some(output) = trade_info.min_sol_output {
+                    output
+                } else {
+                    sol_with_slippage.floor() as u64
+                };
+                
+                // Return accounts for sell
                 (
-                    amount_specified,
+                    amount,
                     min_sol_output,
                     vec![
                         AccountMeta::new_readonly(Pubkey::from_str(PUMP_GLOBAL)?, false),
                         AccountMeta::new(Pubkey::from_str(PUMP_FEE_RECIPIENT)?, false),
-                        AccountMeta::new_readonly(mint, false),
+                        AccountMeta::new_readonly(Pubkey::from_str(mint_str)?, false),
                         AccountMeta::new(bonding_curve, false),
                         AccountMeta::new(associated_bonding_curve, false),
                         AccountMeta::new(in_ata, false),
                         AccountMeta::new(owner, true),
                         AccountMeta::new_readonly(system_program::id(), false),
-                        AccountMeta::new_readonly(
-                            Pubkey::from_str(ASSOCIATED_TOKEN_PROGRAM)?,
-                            false,
-                        ),
-                        AccountMeta::new_readonly(program_id, false),
-                        AccountMeta::new_readonly(Pubkey::from_str(PUMP_ACCOUNT)?, false),
+                        AccountMeta::new_readonly(token_program_id, false),
+                        AccountMeta::new(creator_vault, false),
+                        AccountMeta::new_readonly(Pubkey::from_str(PUMP_EVENT_AUTHORITY)?, false),
                         AccountMeta::new_readonly(pump_program, false),
-                    ],
+                    ]
                 )
             }
         };
-
-        // Constants-Instruction Configuration
-        // -------------------
+        
+        // Build swap instruction
         let build_swap_instruction = Instruction::new_with_bincode(
             pump_program,
             &(pump_method, token_amount, sol_amount_threshold),
-            input_accouts,
+            input_accounts,
         );
-
+        
+        // Combine all instructions
         let mut instructions = vec![];
         if let Some(create_instruction) = create_instruction {
             instructions.push(create_instruction);
         }
-        if amount_specified > 0 {
-            instructions.push(build_swap_instruction)
+        if token_amount > 0 {
+            instructions.push(build_swap_instruction);
         }
         if let Some(close_instruction) = close_instruction {
             instructions.push(close_instruction);
         }
+        
+        // Validate we have instructions
         if instructions.is_empty() {
-            return Err(anyhow!("Instructions is empty, no txn required."
-                .red()
-                .italic()
-                .to_string()));
+            return Err(anyhow!("Instructions is empty, no txn required."));
         }
-        // logger.log(
-        //     format!(
-        //         "[BUILD({:?})-TXN]({}) - {} :: ({:?})",
-        //         swap_config.swap_direction,
-        //         mint_str,
-        //         Utc::now(),
-        //         start_time.elapsed()
-        //     )
-        //     .yellow()
-        //     .to_string(),
-        // );
-
-        // Expire Condition
-        // -------------------
-        if swap_config.swap_direction == SwapDirection::Buy
-            && start_time.elapsed() > Duration::from_millis(700)
-        {
-            return Err(anyhow!("RPC connection is too busy. Expire this txn."
-                .red()
-                .italic()
-                .to_string()));
-        }
-
-        // Return- (instructions, token_price)
-        // --------------------
-        Ok((self.keypair.clone(), instructions, token_price))
+        
+        // Calculate token price
+        let token_price = virtual_sol_reserves as f64 / virtual_token_reserves as f64;
+        
+        // Return the keypair, instructions, and the token price along with the blockhash
+        Ok((self.keypair.clone(), instructions, token_price, recent_blockhash))
     }
 }
 
@@ -410,57 +501,62 @@ pub fn get_bonding_curve_account_by_calc(
 pub async fn get_bonding_curve_account(
     rpc_client: Arc<anchor_client::solana_client::rpc_client::RpcClient>,
     mint: Pubkey,
-    program_id: Pubkey,
+    pump_program: Pubkey,
 ) -> Result<(Pubkey, Pubkey, BondingCurveReserves)> {
-    let bonding_curve = get_pda(&mint, &program_id)?;
+    let bonding_curve = get_pda(&mint, &pump_program)?;
     let associated_bonding_curve = get_associated_token_address(&bonding_curve, &mint);
-    let start_time = Instant::now();
-    // println!("Start: {:?}", start_time.elapsed());
-
-    let max_retries = 30;
-    let time_exceed = 300;
-    let timeout = Duration::from_millis(time_exceed);
-    let mut retry_count = 0;
-    let bonding_curve_data = loop {
-        match rpc_client.get_account_data(&bonding_curve) {
-            Ok(data) => {
-                // println!("Done: {:?}", start_time.elapsed());
-                break data;
+    
+    // Get account data and token balance sequentially since RpcClient is synchronous
+    let bonding_curve_data_result = rpc_client.get_account_data(&bonding_curve);
+    let token_balance_result = rpc_client.get_token_account_balance(&associated_bonding_curve);
+    
+    let bonding_curve_reserves = match bonding_curve_data_result {
+        Ok(bonding_curve_data) => {
+            match from_slice::<BondingCurveAccount>(&bonding_curve_data) {
+                Ok(bonding_curve_account) => BondingCurveReserves {
+                    virtual_token_reserves: bonding_curve_account.virtual_token_reserves,
+                    virtual_sol_reserves: bonding_curve_account.virtual_sol_reserves 
+                },
+                Err(_) => {
+                    // Fallback to direct balance checks
+                    let bonding_curve_sol_balance = rpc_client.get_balance(&bonding_curve).unwrap_or(0);
+                    let token_balance = match &token_balance_result {
+                        Ok(balance) => {
+                            match balance.ui_amount {
+                                Some(amount) => (amount * (10f64.powf(balance.decimals as f64))) as u64,
+                                None => 0,
+                            }
+                        },
+                        Err(_) => 0
+                    };
+                    
+                    BondingCurveReserves {
+                        virtual_token_reserves: token_balance,
+                        virtual_sol_reserves: bonding_curve_sol_balance,
+                    }
+                }
             }
-            Err(err) => {
-                retry_count += 1;
-                if retry_count > max_retries {
-                    return Err(anyhow!(
-                        "Failed to get bonding curve account data after {} retries: {}",
-                        max_retries,
-                        err
-                    ));
-                }
-                if start_time.elapsed() > timeout {
-                    return Err(anyhow!(
-                        "Failed to get bonding curve account data after {:?} timeout: {}",
-                        timeout,
-                        err
-                    ));
-                }
-                tokio::time::sleep(Duration::from_millis(10)).await;
-                // println!("Retry {}: {:?}", retry_count, start_time.elapsed());
+        },
+        Err(_) => {
+            // Fallback to direct balance checks
+            let bonding_curve_sol_balance = rpc_client.get_balance(&bonding_curve).unwrap_or(0);
+            let token_balance = match &token_balance_result {
+                Ok(balance) => {
+                    match balance.ui_amount {
+                        Some(amount) => (amount * (10f64.powf(balance.decimals as f64))) as u64,
+                        None => 0,
+                    }
+                },
+                Err(_) => 0
+            };
+            
+            BondingCurveReserves {
+                virtual_token_reserves: token_balance,
+                virtual_sol_reserves: bonding_curve_sol_balance,
             }
         }
     };
 
-    let bonding_curve_account =
-        from_slice::<BondingCurveAccount>(&bonding_curve_data).map_err(|e| {
-            anyhow!(
-                "Failed to deserialize bonding curve account: {}",
-                e.to_string()
-            )
-        })?;
-    let bonding_curve_reserves = BondingCurveReserves 
-        { 
-            virtual_token_reserves: bonding_curve_account.virtual_token_reserves, 
-            virtual_sol_reserves: bonding_curve_account.virtual_sol_reserves 
-        };
     Ok((
         bonding_curve,
         associated_bonding_curve,

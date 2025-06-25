@@ -17,7 +17,7 @@ impl From<SwapDirection> for u8 {
     }
 }
 
-#[derive(ValueEnum, Debug, Clone, Deserialize)]
+#[derive(ValueEnum, Debug, Clone, Deserialize, PartialEq)]
 pub enum SwapInType {
     /// Quantity
     #[serde(rename = "qty")]
@@ -25,4 +25,14 @@ pub enum SwapInType {
     /// Percentage
     #[serde(rename = "pct")]
     Pct,
+}
+
+#[derive(ValueEnum, Debug, Clone, Deserialize, PartialEq)]
+pub enum SwapProtocol {
+    #[serde(rename = "pumpfun")]
+    PumpFun,
+    #[serde(rename = "pumpswap")]
+    PumpSwap,
+    #[serde(rename = "auto")]
+    Auto,
 }

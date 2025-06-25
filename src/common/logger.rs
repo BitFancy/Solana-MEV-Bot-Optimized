@@ -39,6 +39,21 @@ impl Logger {
         log
     }
 
+    // Add success method to fix compilation errors in monitor.rs
+    pub fn success(&self, message: String) -> String {
+        let log = format!("{} [{}] {}", self.prefix_with_date(), "SUCCESS".green().bold(), message);
+        println!("{}", log);
+        log
+    }
+
+    // Add a new method for performance-critical paths
+    pub fn log_critical(&self, message: String) -> String {
+        // Only log if not in a performance-critical section
+        let log = format!("{} {}", self.prefix_with_date(), message);
+        // Skip println for critical paths
+        log
+    }
+
     fn prefix_with_date(&self) -> String {
         let date = Local::now();
         format!(

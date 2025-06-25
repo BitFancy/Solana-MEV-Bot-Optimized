@@ -1,0 +1,18 @@
+suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK
+
+DfMxre4cKmvogbLrPigxmibVTTQDuzjdXojWzjCXXhzj 
+
+=========================
+888DUdR3P4fYa4Es5AVvJhoqwQGhFV56NotdHt2gz3e1
+
+
+EjwdVLEr4Gsnsu1YMVg3RVsBSfsxekrRjBGv2BPE6tSV
+
+AGzrUzWwHFttUu446C31Pe3USoZMz8CB53mFp6upbhkA (pumpfun)
+
+selling logic, after suceed on buying. then spawn grpc subscribe about the bought token mint and listen token price, and of there is profit , implemen selling. 
+set one option : sell all or sell based on take profit level
+I set basic logic for selling, fix and complete, don't change logic ,
+implement token activity monitoring all over the project.
+implement detailed monitoring about tokens to sell
+the main grpc streaming  is about monitoring target wallet, so we have to spawn other streaming about token mint to sell

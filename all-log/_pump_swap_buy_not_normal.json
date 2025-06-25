@@ -1,0 +1,200 @@
+
+{
+  "slot": 339247286,
+  "timestamp": "2025-05-11T06:07:48.083936675+00:00",
+  "transaction": {
+    "meta": {
+      "err": null,
+      "fee": 23422,
+      "inner_instructions": [
+        {
+          "index": 2,
+          "instructions_count": 4
+        },
+        {
+          "index": 6,
+          "instructions_count": 4
+        }
+      ],
+      "log_messages": [
+        "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+        "Program ComputeBudget111111111111111111111111111111 success",
+        "Program 11111111111111111111111111111111 invoke [1]",
+        "Program 11111111111111111111111111111111 success",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL invoke [1]",
+        "Program log: CreateIdempotent",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: GetAccountDataSize",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1569 of 1000295 compute units",
+        "Program return: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA pQAAAAAAAAA=",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program 11111111111111111111111111111111 invoke [2]",
+        "Program 11111111111111111111111111111111 success",
+        "Program log: Initialize the associated token account",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: InitializeImmutableOwner",
+        "Program log: Please upgrade to SPL Token 2022 for immutable owner support",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1405 of 993708 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: InitializeAccount3",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3158 of 989826 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL consumed 22315 of 1008700 compute units",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL success",
+        "Program 11111111111111111111111111111111 invoke [1]",
+        "Program 11111111111111111111111111111111 success",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]",
+        "Program log: Instruction: SyncNative",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3045 of 986235 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL invoke [1]",
+        "Program log: CreateIdempotent",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL consumed 13338 of 983190 compute units",
+        "Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL success",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA invoke [1]",
+        "Program log: Instruction: Buy",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: TransferChecked",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6147 of 943321 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: TransferChecked",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6238 of 934507 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+        "Program log: Instruction: TransferChecked",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6238 of 925617 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+        "Program data: Z/RSHyz1d3ezPiBoAAAAAD2h6NjTAAAAQO2WBAAAAACvH5p8GwAAAEDtlgQAAAAAk3Gb1sqSAAAzL+ziAgAAABhxMAQAAAAAFAAAAAAAAAAYJQIAAAAAAAUAAAAAAAAARokAAAAAAAAwljIEAAAAAHYfMwQAAAAAtENDf7flok97wNuPWq0AOs87KmZJ23Mbb39+O/exF+hadVQ7rwdjfpW3yb1eLD+cqeMv3ZEZBjbDNAoCeNfPfVjA+9H2488zPlVhqCUNrCxDXbMXC4LFGlo0KBNStpjQJnzpexKnE7BCl9rIBZyLeSekopksCjGocZ0hZ3L0xe//g4OBi6j6KMPNO21ek/n6uPCXm8NyFazFskaHe6jDybnwRqOiz07iErT6kv2dAPpPsLP8/TYeQK5TkflgNepj",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA invoke [2]",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA consumed 2004 of 913515 compute units",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA success",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA consumed 58880 of 969852 compute units",
+        "Program pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA success",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]",
+        "Program log: Instruction: CloseAccount",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2915 of 910972 compute units",
+        "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success"
+      ],
+      "post_balances": [
+        96603957,
+        899769112032,
+        0,
+        2039280,
+        2039280,
+        12469527379,
+        1658325263999,
+        1,
+        1,
+        731913600,
+        1040131569087,
+        934087680,
+        1461600,
+        1141440,
+        2359440,
+        4454402,
+        1000000,
+        0
+      ],
+      "post_token_balances": [
+        {
+          "account_index": 3,
+          "mint": "DrE5uQCUT1HJDECoKGR96eCsqWmo6wkgg3NVLvej58Yw",
+          "owner": "767TdixmhpwYEivDjhqr5XVeF2uEUop4RoyC6P4wfX1N",
+          "ui_token_amount": {
+            "amount": "1027931816172",
+            "decimals": 6
+          }
+        },
+        {
+          "account_index": 4,
+          "mint": "DrE5uQCUT1HJDECoKGR96eCsqWmo6wkgg3NVLvej58Yw",
+          "owner": "D8fsgtNjEaARFU38fqVbmfUNBfaEontqsMJP6D59rizK",
+          "ui_token_amount": {
+            "amount": "160490004336726",
+            "decimals": 6
+          }
+        },
+        {
+          "account_index": 5,
+          "mint": "So11111111111111111111111111111111111111112",
+          "owner": "D8fsgtNjEaARFU38fqVbmfUNBfaEontqsMJP6D59rizK",
+          "ui_token_amount": {
+            "amount": "12467488099",
+            "decimals": 9
+          }
+        },
+        {
+          "account_index": 6,
+          "mint": "So11111111111111111111111111111111111111112",
+          "owner": "JCRGumoE9Qi5BBgULTgdgTLjSgkCMSbF62ZZfGs84JeU",
+          "ui_token_amount": {
+            "amount": "1658323224719",
+            "decimals": 9
+          }
+        }
+      ],
+      "pre_balances": [
+        62086633,
+        899874112032,
+        0,
+        2039280,
+        2039280,
+        12399103267,
+        1658325228857,
+        1,
+        1,
+        731913600,
+        1040131569087,
+        934087680,
+        1461600,
+        1141440,
+        2359440,
+        4454402,
+        1000000,
+        0
+      ],
+      "pre_token_balances": [
+        {
+          "account_index": 3,
+          "mint": "DrE5uQCUT1HJDECoKGR96eCsqWmo6wkgg3NVLvej58Yw",
+          "owner": "767TdixmhpwYEivDjhqr5XVeF2uEUop4RoyC6P4wfX1N",
+          "ui_token_amount": {
+            "amount": "118054592431",
+            "decimals": 6
+          }
+        },
+        {
+          "account_index": 4,
+          "mint": "DrE5uQCUT1HJDECoKGR96eCsqWmo6wkgg3NVLvej58Yw",
+          "owner": "D8fsgtNjEaARFU38fqVbmfUNBfaEontqsMJP6D59rizK",
+          "ui_token_amount": {
+            "amount": "161399881560467",
+            "decimals": 6
+          }
+        },
+        {
+          "account_index": 5,
+          "mint": "So11111111111111111111111111111111111111112",
+          "owner": "D8fsgtNjEaARFU38fqVbmfUNBfaEontqsMJP6D59rizK",
+          "ui_token_amount": {
+            "amount": "12397063987",
+            "decimals": 9
+          }
+        },
+        {
+          "account_index": 6,
+          "mint": "So11111111111111111111111111111111111111112",
+          "owner": "JCRGumoE9Qi5BBgULTgdgTLjSgkCMSbF62ZZfGs84JeU",
+          "ui_token_amount": {
+            "amount": "1658323189577",
+            "decimals": 9
+          }
+        }
+      ],
+      "rewards": []
+    },
+    "signature": "4vdPVZwSFcdfMD2HPMUxmffZGaV8UiqpriBpZrWeiNdMhd2Gr3xrJjTSXwZwSS1okwNLQh4gPT5xamXSNW9b6MxX"
+  }
+}

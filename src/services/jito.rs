@@ -121,11 +121,6 @@ where
                         "Finalized bundle {}: {}",
                         bundle_id, bundle_status.confirmation_status
                     );
-                    // // print tx
-                    // bundle_status
-                    //     .transactions
-                    //     .iter()
-                    //     .for_each(|tx| println!("https://solscan.io/tx/{}", tx));
                     return Ok(bundle_status.transactions[0..2].to_vec());
                 }
                 _ => {
@@ -247,22 +242,22 @@ impl JitoClient {
                 "skipPreflight": self.config.skip_preflight,
                 "preflightCommitment": self.config.preflight_commitment.commitment,
                 "encoding": self.config.encoding,
-                "maxRetries": MAX_RETRIES,
-                "minContextSlot": null
+                "maxRetries": 1,
             }
         ]);
 
-        let response = self.send_request("sendTransaction", params).await?;
-
-        response["result"]
-            .as_str()
-            .map(|s| s.to_string())
-            .ok_or_else(|| {
-                ClientError::Parse(
-                    "Invalid response format".to_string(),
-                    "Missing result field".to_string(),
-                )
-            })
+        let response_data = self.send_request("sendTransaction", params).await?;
+        
+        if let Some(result) = response_data.get("result") {
+            if let Some(signature) = result.as_str() {
+                return Ok(signature.to_string());
+            }
+        }
+        
+        Err(ClientError::Parse(
+            "Invalid response format".to_string(),
+            response_data.to_string(),
+        ))
     }
 
     async fn send_request(&self, method: &str, params: Value) -> Result<Value, ClientError> {

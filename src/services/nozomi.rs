@@ -5,6 +5,9 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use std::{str::FromStr, sync::LazyLock};
 
 pub static NOZOMI_URL: LazyLock<String> = LazyLock::new(|| import_env_var("NOZOMI_URL"));
+pub fn get_nozomi_tip() -> f64 {
+    import_env_var("NOZOMI_TIP_VALUE").parse::<f64>().unwrap_or(0.001)
+}
 
 pub fn get_tip_account() -> Result<Pubkey> {
     let accounts = [
@@ -38,20 +41,4 @@ pub fn get_tip_account() -> Result<Pubkey> {
     Ok(tip_account)
 }
 
-pub async fn get_tip_value() -> Result<f64> {
-    // If NOZOMI_TIP_VALUE is set, use it
-    if let Ok(tip_value) = std::env::var("NOZOMI_TIP_VALUE") {
-        match f64::from_str(&tip_value) {
-            Ok(value) => Ok(value),
-            Err(_) => {
-                println!(
-                    "Invalid NOZOMI_TIP_VALUE in environment variable: '{}'. Falling back to percentile calculation.",
-                    tip_value
-                );
-                Err(anyhow!("Invalid TIP_VALUE in environment variable"))
-            }
-        }
-    } else {
-        Err(anyhow!("NOZOMI_TIP_VALUE environment variable not set"))
-    }
-}
+
