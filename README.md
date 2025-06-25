@@ -171,7 +171,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 > **Contact Information:**
-> - **Discord:** [flash______]
+> - **Discord:** [flash______](https://discord.gg/tnaScVbF)
 > - **Email:** [bitbanana717@gmail.com](mailto:bitbanana717@gmail.com)
 > - **Telegram:** [@bitfancy](https://t.me/bitfancy)
 
