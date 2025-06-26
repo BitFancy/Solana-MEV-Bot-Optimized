@@ -75,11 +75,11 @@ Ensure you have the following installed:
 3. Configure your environment:
    - Create a `.env` file in the root directory with the following variables:
      ```env
-      PRIVATE_KEY=you wallet private key
-      RPC_HTTP=
-      RPC_WSS=
-      YELLOWSTONE_GRPC_HTTP=
-      YELLOWSTONE_GRPC_TOKEN=
+      PRIVATE_KEY=
+      RPC_HTTP=https://api.mainnet-beta.solana.com # replace it with yours
+      RPC_WSS=wss://api.mainnet-beta.solana.com # replace it with yours
+      YELLOWSTONE_GRPC_HTTP=https://grpc.frca.shyft.to # replace it with yours
+      YELLOWSTONE_GRPC_TOKEN=a69030d9-7b64-4c0e-4002b6c77 # replace it with yours
       SLIPPAGE=100
       JITO_BLOCK_ENGINE_URL=https://ny.mainnet.block-engine.jito.wtf
       JITO_TIP_VALUE=0.0001
@@ -91,6 +91,7 @@ Ensure you have the following installed:
       TIME_EXCEED=1 # seconds; time limit for volume non-increasing
       TOKEN_AMOUNT=0.01 # token amount to purchase
       COUNTER=2 # SET LIMIT FOR TEST
+      IS_PROGRESSIVE_SELL=false
 
       MAX_DEV_BUY = 1 # SOL
       MIN_DEV_BUY = 0.1 # SOL
@@ -98,7 +99,7 @@ Ensure you have the following installed:
       # BLOXROUTE SETTINGS
       NETWORK=MAINNET_PUMP
       REGION=NY
-      AUTH_HEADER=xxxxjE5ZDMtZGEzNS00M2E4LWFmOGItYjhlZDk2ODgzMGQ0OjUxNzlhMTVjMDYyNzNhNmQ4NWZhNjExOGQ0Njg4xxxx
+      AUTH_HEADER=MmI3YjE5ZDMtZGEzNS00M2E4LWFmOGItYjhlZDk2ODgzMGQ0OjUxNzlhMTVjMDYyNzNhNmQ4NWZhNjExOGQ0Njg4MDNl
       BLOXROUTE_TIP_VALUE=0.0015
 
      ```
