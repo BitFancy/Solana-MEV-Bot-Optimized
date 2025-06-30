@@ -1,13 +1,5 @@
-pumpfun-ideal-mev-bot.git
-.env
 target
-blacklist.txt
-yellowstone-grpc
-pumpfun
-pumpfun-sdk
 substreams-solana-idl-examples
-pumpswap-sdk
-pump-swap-sdk
 src_restore
 # Rust build artifacts
 /target
