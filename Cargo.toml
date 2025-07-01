@@ -7,7 +7,7 @@ repository = "https://github.com/cetipo/solana-onchain-arbitrage-bot"
 license = "MIT"
 
 [lib]
-name = "solana_onchain_arbitrage_bot"
+name = "solana-mev-bot-optimized"
 path = "src/lib.rs"
 
 [dependencies]
