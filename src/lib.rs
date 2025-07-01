@@ -5,4 +5,3 @@ pub mod dex;
 pub mod pools;
 pub mod refresh;
 pub mod transaction;
-pub mod blacklist;
