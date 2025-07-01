@@ -78,26 +78,6 @@ impl Config {
                     Err(_) => Blacklist::empty(),
                 };
 
-                logger.log(
-                    format!(
-                        "[SNIPER ENVIRONMENT]: \n\t\t\t\t [Yellowstone gRpc]: {},
-                    \n\t\t\t\t * [Wallet]: {:?}, * [Balance]: {} Sol, 
-                    \n\t\t\t\t * [Slippage]: {}, * [Solana]: {},
-                    \n\t\t\t\t * [Time Exceed]: {}, * [Amount]: {},
-                    \n\t\t\t\t * [Blacklist]: {}",
-                        yellowstone_grpc_http,
-                        wallet_cloned.pubkey(),
-                        balance as f64 / 1_000_000_000_f64,
-                        slippage_input,
-                        solana_price,
-                        time_exceed,
-                        amount_in,
-                        blacklist.clone().length(),
-                    )
-                    .purple()
-                    .italic()
-                    .to_string(),
-                );
                 Mutex::new(Config {
                     yellowstone_grpc_http,
                     yellowstone_grpc_token,
