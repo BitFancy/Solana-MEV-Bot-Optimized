@@ -53,15 +53,11 @@ impl Config {
 
                 let wallet_cloned = wallet.clone();
                 let use_jito = true;
-                let in_type = SwapInType::Qty; //SwapInType::Pct
                 let amount_in = import_env_var("TOKEN_AMOUNT")
                     .parse::<f64>()
                     .unwrap_or(0.0000001_f64); //quantity
-                                            // let in_type = "pct"; //percentage
-                                            // let amount_in = 0.5; //percentage
 
                 let swap_config = SwapConfig {
-                    in_type,
                     amount_in,
                     slippage,
                     use_jito,
@@ -183,7 +179,6 @@ pub struct AppState {
 
 #[derive(Clone)]
 pub struct SwapConfig {
-    pub in_type: SwapInType,
     pub amount_in: f64,
     pub slippage: u64,
     pub use_jito: bool,
