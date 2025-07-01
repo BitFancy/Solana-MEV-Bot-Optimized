@@ -1,5 +1,4 @@
-mod blacklist;
-use blacklist::Blacklist;
+use crate::blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
@@ -54,7 +53,6 @@ impl Config {
 
                 let wallet_cloned = wallet.clone();
                 let use_jito = true;
-                let swap_direction = SwapDirection::Buy; //SwapDirection::Sell
                 let in_type = SwapInType::Qty; //SwapInType::Pct
                 let amount_in = import_env_var("TOKEN_AMOUNT")
                     .parse::<f64>()
@@ -63,7 +61,6 @@ impl Config {
                                             // let amount_in = 0.5; //percentage
 
                 let swap_config = SwapConfig {
-                    swap_direction,
                     in_type,
                     amount_in,
                     slippage,
@@ -186,7 +183,6 @@ pub struct AppState {
 
 #[derive(Clone)]
 pub struct SwapConfig {
-    pub swap_direction: SwapDirection,
     pub in_type: SwapInType,
     pub amount_in: f64,
     pub slippage: u64,
