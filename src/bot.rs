@@ -22,7 +22,7 @@ pub async fn run_bot() -> anyhow::Result<()> {
     let config = Config::get().await;
     info!("Configuration loaded successfully");
 
-    let rpc_client = Arc::new(RpcClient::new(config.rpc.url.clone()));
+    let rpc_client = Arc::new(RpcClient::new(config.yellowstone_grpc_http.clone()));
 
     let sending_rpc_clients = if let Some(spam_config) = &config.spam {
         if spam_config.enabled {

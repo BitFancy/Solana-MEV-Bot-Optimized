@@ -1,3 +1,5 @@
+mod blacklist;
+use blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
@@ -7,7 +9,8 @@ use serde::Deserialize;
 use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair, signer::Signer};
 use tokio::sync::{Mutex, OnceCell};
 use std::{env, sync::Arc};
-use crate::blacklist::Blacklist;
+
+static GLOBAL_CONFIG: OnceCell<Mutex<Config>> = OnceCell::const_new();
 
 pub struct Config {
     pub yellowstone_grpc_http: String,
