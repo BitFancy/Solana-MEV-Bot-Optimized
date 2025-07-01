@@ -8,13 +8,6 @@ use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, signature::
 use tokio::sync::{Mutex, OnceCell};
 use std::{env, sync::Arc};
 
-use crate::common::constants::INIT_MSG;
-use crate::common::logger::Logger;
-use crate::engine::swap::{SwapDirection, SwapInType};
-use crate::common::blacklist::Blacklist;
-
-static GLOBAL_CONFIG: OnceCell<Mutex<Config>> = OnceCell::const_new();
-
 pub struct Config {
     pub yellowstone_grpc_http: String,
     pub yellowstone_grpc_token: String,
@@ -31,12 +24,7 @@ impl Config {
     pub async fn new() -> &'static Mutex<Config> {
         GLOBAL_CONFIG
             .get_or_init(|| async {
-                let init_msg = INIT_MSG;
-                println!("{}", init_msg);
-
                 dotenv().ok(); // Load .env file
-
-                let logger = Logger::new("[INIT] => ".blue().bold().to_string());
 
                 let yellowstone_grpc_http = import_env_var("YELLOWSTONE_GRPC_HTTP");
                 let yellowstone_grpc_token = import_env_var("YELLOWSTONE_GRPC_TOKEN");
