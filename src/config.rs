@@ -7,6 +7,7 @@ use serde::Deserialize;
 use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair, signer::Signer};
 use tokio::sync::{Mutex, OnceCell};
 use std::{env, sync::Arc};
+use crate::blacklist::Blacklist;
 
 pub struct Config {
     pub yellowstone_grpc_http: String,
