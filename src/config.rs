@@ -1,5 +1,5 @@
-mod blacklist;
-use blacklist::Blacklist;
+// mod blacklist;
+use crate::blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
@@ -12,6 +12,7 @@ use std::{env, sync::Arc};
 
 static GLOBAL_CONFIG: OnceCell<Mutex<Config>> = OnceCell::const_new();
 
+#[derive(Clone)]
 pub struct Config {
     pub yellowstone_grpc_http: String,
     pub yellowstone_grpc_token: String,
