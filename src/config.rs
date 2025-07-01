@@ -1,5 +1,5 @@
 // mod blacklist;
-use crate::blacklist::Blacklist;
+use solana_onchain_arbitrage_bot::blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
