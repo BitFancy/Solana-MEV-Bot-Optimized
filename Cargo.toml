@@ -1,5 +1,5 @@
 [package]
-name = "solana-mev-bot-optimized"
+name = "solana-onchain-arbitrage-bot"
 version = "0.1.0"
 edition = "2021"
 description = "A simple Solana onchain arbitrage bot"
@@ -7,7 +7,7 @@ repository = "https://github.com/cetipo/solana-onchain-arbitrage-bot"
 license = "MIT"
 
 [lib]
-name = "solana-mev-bot-optimized"
+name = "solana_onchain_arbitrage_bot"
 path = "src/lib.rs"
 
 [dependencies]

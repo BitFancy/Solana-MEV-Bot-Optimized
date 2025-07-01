@@ -1,5 +1,3 @@
-// mod blacklist;
-use crate::blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
@@ -19,7 +17,6 @@ pub struct Config {
     pub app_state: AppState,
     pub swap_config: SwapConfig,
     pub time_exceed: u64,
-    pub blacklist: Blacklist,
     pub counter_limit: u32,
     pub min_dev_buy: u32,
     pub max_dev_buy: u32,
@@ -79,11 +76,6 @@ impl Config {
                     .parse()
                     .expect("Failed to parse string into u64");
 
-                let blacklist = match Blacklist::new("blacklist.txt") {
-                    Ok(blacklist) => blacklist,
-                    Err(_) => Blacklist::empty(),
-                };
-
                 let spam = Some(SpamConfig {
                     enabled: true,
                     sending_rpc_urls: vec![],
@@ -116,7 +108,6 @@ impl Config {
                     app_state,
                     swap_config,
                     time_exceed,
-                    blacklist,
                     counter_limit,
                     min_dev_buy,
                     max_dev_buy,
