@@ -134,13 +134,13 @@ pub async fn run_bot() -> anyhow::Result<()> {
 
         // TODO: Add logic to periodically refresh pool data
 
-        let config_clone = config.clone();
+        let config_clone = (*config).clone();
         let mint_config_clone = mint_config.clone();
         let sending_rpc_clients_clone = sending_rpc_clients.clone();
         let cached_blockhash_clone = cached_blockhash.clone();
         let wallet_bytes = wallet_kp.to_bytes();
         let wallet_kp_clone = Keypair::from_bytes(&wallet_bytes).unwrap();
-        let mut lookup_table_accounts = mint_config_clone.lookup_table_accounts.unwrap_or_default();
+        let mut lookup_table_accounts = mint_config_clone.lookup_table_accounts.clone().unwrap_or_default();
         lookup_table_accounts.push("4sKLJ1Qoudh8PJyqBeuKocYdsZvxTcRShUt9aKqwhgvC".to_string());
 
         let mut lookup_table_accounts_list = vec![];

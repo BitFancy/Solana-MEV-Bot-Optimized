@@ -1,4 +1,5 @@
-use crate::blacklist::Blacklist;
+mod blacklist;
+use blacklist::Blacklist;
 use anyhow::Result;
 use bs58;
 use colored::Colorize;
@@ -21,6 +22,10 @@ pub struct Config {
     pub counter_limit: u32,
     pub min_dev_buy: u32,
     pub max_dev_buy: u32,
+    pub spam: Option<SpamConfig>,
+    pub routing: RoutingConfig,
+    pub flashloan: Option<FlashloanConfig>,
+    pub bot: BotConfig,
 }
 
 impl Config {
@@ -78,6 +83,32 @@ impl Config {
                     Err(_) => Blacklist::empty(),
                 };
 
+                let spam = Some(SpamConfig {
+                    enabled: true,
+                    sending_rpc_urls: vec![],
+                    compute_unit_price: 1000,
+                    max_retries: Some(3),
+                });
+                let routing = RoutingConfig {
+                    mint_config_list: vec![MintConfig {
+                        mint: "So11111111111111111111111111111111111111112".to_string(),
+                        process_delay: 1000,
+                        lookup_table_accounts: None,
+                        raydium_pool_list: None,
+                        raydium_cp_pool_list: None,
+                        pump_pool_list: None,
+                        meteora_dlmm_pool_list: None,
+                        whirlpool_pool_list: None,
+                        raydium_clmm_pool_list: None,
+                        meteora_damm_pool_list: None,
+                        solfi_pool_list: None,
+                        meteora_damm_v2_pool_list: None,
+                        vertigo_pool_list: None,
+                    }],
+                };
+                let flashloan = Some(FlashloanConfig { enabled: false });
+                let bot = BotConfig { compute_unit_limit: 60000 };
+
                 Mutex::new(Config {
                     yellowstone_grpc_http,
                     yellowstone_grpc_token,
@@ -88,6 +119,10 @@ impl Config {
                     counter_limit,
                     min_dev_buy,
                     max_dev_buy,
+                    spam,
+                    routing,
+                    flashloan,
+                    bot,
                 })
             })
             .await
@@ -162,6 +197,46 @@ pub struct SwapConfig {
     pub amount_in: f64,
     pub slippage: u64,
     pub use_jito: bool,
+}
+
+#[derive(Clone)]
+pub struct SpamConfig {
+    pub enabled: bool,
+    pub sending_rpc_urls: Vec<String>,
+    pub compute_unit_price: u64,
+    pub max_retries: Option<u64>,
+}
+
+#[derive(Clone)]
+pub struct FlashloanConfig {
+    pub enabled: bool,
+}
+
+#[derive(Clone)]
+pub struct BotConfig {
+    pub compute_unit_limit: u32,
+}
+
+#[derive(Clone)]
+pub struct MintConfig {
+    pub mint: String,
+    pub process_delay: u64,
+    pub lookup_table_accounts: Option<Vec<String>>,
+    pub raydium_pool_list: Option<Vec<String>>,
+    pub raydium_cp_pool_list: Option<Vec<String>>,
+    pub pump_pool_list: Option<Vec<String>>,
+    pub meteora_dlmm_pool_list: Option<Vec<String>>,
+    pub whirlpool_pool_list: Option<Vec<String>>,
+    pub raydium_clmm_pool_list: Option<Vec<String>>,
+    pub meteora_damm_pool_list: Option<Vec<String>>,
+    pub solfi_pool_list: Option<Vec<String>>,
+    pub meteora_damm_v2_pool_list: Option<Vec<String>>,
+    pub vertigo_pool_list: Option<Vec<String>>,
+}
+
+#[derive(Clone)]
+pub struct RoutingConfig {
+    pub mint_config_list: Vec<MintConfig>,
 }
 
 pub fn import_env_var(key: &str) -> String {
