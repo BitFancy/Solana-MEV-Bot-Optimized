@@ -51,3 +51,8 @@ meteora-damm-cpi = { path = "lib/meteora-damm", features = ["no-entrypoint"] }
 meteora-vault-cpi = { path = "lib/meteora-vault", features = ["no-entrypoint"] }
 
 dotenv = "0.15"
+
+colored = "2.0"
+anchor-client = "0.29"
+reqwest = { version = "0.11", features = ["json", "blocking", "rustls-tls"] }
+serde_json = "1.0"

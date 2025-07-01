@@ -8,10 +8,10 @@ use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, signature::
 use tokio::sync::{Mutex, OnceCell};
 use std::{env, sync::Arc};
 
-use crate::{
-    common::{constants::INIT_MSG, logger::Logger},
-    engine::swap::{SwapDirection, SwapInType},
-};
+use crate::common::constants::INIT_MSG;
+use crate::common::logger::Logger;
+use crate::engine::swap::{SwapDirection, SwapInType};
+use crate::common::blacklist::Blacklist;
 
 static GLOBAL_CONFIG: OnceCell<Mutex<Config>> = OnceCell::const_new();
 
@@ -146,8 +146,6 @@ pub const HELIUS_PROXY: &str =
 
 use std::cmp::Eq;
 use std::hash::{Hash, Hasher};
-
-use super::blacklist::Blacklist;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LiquidityPool {
