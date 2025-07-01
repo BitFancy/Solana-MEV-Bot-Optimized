@@ -1,5 +1,5 @@
 [package]
-name = "solana-onchain-arbitrage-bot"
+name = "solana-mev-bot-optimized"
 version = "0.1.0"
 edition = "2021"
 description = "A simple Solana onchain arbitrage bot"
