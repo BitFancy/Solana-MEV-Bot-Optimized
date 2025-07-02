@@ -1,4 +1,4 @@
-# Solana MEV Bot - Advanced Pump.fun Trading Bot
+# Solana MEV Bot - Flashloan Arbitrage Trading Bot
 
 ## 📬 Contact & Support
 
@@ -20,30 +20,26 @@
   <b>For support, questions, or collaboration opportunities, reach out through any of the above channels!</b>
 </p>
 
-A sophisticated **Solana MEV (Maximal Extractable Value) bot** built in Rust, specifically designed for high-frequency trading on Pump.fun tokens with advanced features including Jito bundle support, real-time mempool monitoring, and intelligent arbitrage strategies.
+A high-performance **Solana MEV (Maximal Extractable Value) bot** built in Rust, designed for atomic flashloan-based arbitrage across multiple DEXs. This bot leverages real-time mempool monitoring, advanced routing, and flashloan execution to capture arbitrage opportunities on Solana with maximum efficiency and security.
 
 ## 🚀 Features
 
-### Core MEV Capabilities
-- **Real-time Mempool Monitoring**: Uses Yellowstone gRPC for instant transaction detection
-- **Pump.fun Integration**: Specialized for Pump.fun token trading with bonding curve calculations
-- **Jito Bundle Support**: Advanced transaction bundling for MEV extraction
-- **Multi-DEX Arbitrage**: Supports Jupiter and OKX DEX for cross-platform arbitrage
-- **Intelligent Slippage Management**: Dynamic slippage calculation and protection
-
-### Advanced Trading Features
-- **Bonding Curve Analysis**: Real-time calculation of virtual SOL and token reserves
-- **Volume Change Detection**: Monitors liquidity pool changes for optimal entry/exit points
-- **Blacklist Management**: Configurable token blacklisting for risk management
-- **Auto-Sell Functionality**: Automated profit-taking with configurable thresholds
-- **Priority Fee Optimization**: Dynamic fee calculation for transaction prioritization
+### Core MEV & Arbitrage Capabilities
+- **Atomic Flashloan Arbitrage**: Executes arbitrage trades using flashloans, ensuring all legs succeed or the transaction reverts.
+- **Multi-DEX Support**: Integrates with Raydium, Orca, Jupiter, Meteora, and more for deep liquidity and diverse routes.
+- **Real-time Mempool Monitoring**: Uses Yellowstone gRPC for instant detection of profitable opportunities.
+- **Jito Bundle Support**: Optionally submits transactions as bundles for priority inclusion and MEV extraction.
+- **Dynamic Routing**: Finds the most profitable arbitrage paths across supported DEXs.
+- **Blacklist Management**: Configurable token and pool blacklisting for risk mitigation.
+- **Priority Fee Optimization**: Dynamically adjusts fees for transaction prioritization.
 
 ### Technical Infrastructure
-- **High-Performance Rust**: Optimized for speed and reliability
-- **Async Architecture**: Non-blocking I/O for maximum throughput
-- **Multi-RPC Support**: Fallback RPC endpoints for reliability
-- **Comprehensive Logging**: Detailed transaction and performance monitoring
-- **Environment Configuration**: Flexible configuration via environment variables
+- **High-Performance Rust**: Built for speed, reliability, and low latency.
+- **Async Architecture**: Non-blocking I/O for maximum throughput.
+- **Multi-RPC Support**: Fallback and load-balanced RPC endpoints for reliability.
+- **Comprehensive Logging**: Detailed transaction, error, and performance monitoring.
+- **Flexible Configuration**: Environment variables and config files for all key parameters.
+- **Modular Design**: Easily extendable to support new DEXs or strategies.
 
 ## 📋 Prerequisites
 
@@ -53,7 +49,6 @@ Ensure you have the following installed:
   ```bash
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
-  
 - **Solana CLI**: Install by running:
   ```bash
   sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
@@ -66,42 +61,28 @@ Ensure you have the following installed:
    git clone https://github.com/BitFancy/solana-mev-bot-optimized.git
    cd solana-mev-bot-optimized
    ```
-
 2. Build the project:
    ```bash
    cargo build
    ```
-
 3. Configure your environment:
    - Create a `.env` file in the root directory with the following variables:
      ```env
-      PRIVATE_KEY=
-      RPC_HTTP=https://api.mainnet-beta.solana.com # replace it with yours
-      RPC_WSS=wss://api.mainnet-beta.solana.com # replace it with yours
-      YELLOWSTONE_GRPC_HTTP=https://grpc.frca.shyft.to # replace it with yours
-      YELLOWSTONE_GRPC_TOKEN=a69030d9-7b64-4c0e-4002b6c77 # replace it with yours
-      SLIPPAGE=100
-      JITO_BLOCK_ENGINE_URL=https://ny.mainnet.block-engine.jito.wtf
-      JITO_TIP_VALUE=0.0001
-      JITO_PRIORITY_FEE=0.00000
-      ZERO_SLOT_URL=https://ny.0slot.trade/?api-key=b7dfe4623b3b41b598ffb747fe1cd60e
-      ZERO_SLOT_TIP_VALUE=0.001
-      NOZOMI_URL=https://ewr1.secure.nozomi.temporal.xyz/?c=ae5ce70a-680a-4bc1-8d23-c2e9fd014819
-      NOZOMI_TIP_VALUE=0.001
-      TIME_EXCEED=1 # seconds; time limit for volume non-increasing
-      TOKEN_AMOUNT=0.01 # token amount to purchase
-      COUNTER=2 # SET LIMIT FOR TEST
-      IS_PROGRESSIVE_SELL=false
-
-      MAX_DEV_BUY = 1 # SOL
-      MIN_DEV_BUY = 0.1 # SOL
-
-      # BLOXROUTE SETTINGS
-      NETWORK=MAINNET_PUMP
-      REGION=NY
-      AUTH_HEADER=MmI3YjE5ZDMtZGEzNS00M2E4LWFmOGItYjhlZDk2ODgzMGQ0OjUxNzlhMTVjMDYyNzNhNmQ4NWZhNjExOGQ0Njg4MDNl
-      BLOXROUTE_TIP_VALUE=0.0015
-
+     PRIVATE_KEY=
+     RPC_HTTP=https://api.mainnet-beta.solana.com
+     YELLOWSTONE_GRPC_HTTP=https://grpc.frca.shyft.to
+     YELLOWSTONE_GRPC_TOKEN=your_token_here
+     SLIPPAGE=100
+     JITO_BLOCK_ENGINE_URL=https://ny.mainnet.block-engine.jito.wtf
+     JITO_TIP_VALUE=0.0001
+     JITO_PRIORITY_FEE=0.00000
+     TIME_EXCEED=1
+     TOKEN_AMOUNT=0.01
+     COUNTER=2
+     IS_PROGRESSIVE_SELL=false
+     MAX_DEV_BUY=1
+     MIN_DEV_BUY=0.1
+     # Add additional DEX or flashloan provider settings as needed
      ```
 
 ## 🚀 Running the Bot
@@ -109,45 +90,66 @@ Ensure you have the following installed:
 To start the MEV bot:
 
 ```bash
-cargo run 
+cargo run
 ```
 
 The bot will:
-1. Initialize the trading environment
-2. Connect to Yellowstone gRPC for real-time monitoring
-3. Begin monitoring Pump.fun token launches
-4. Execute trades based on configured strategies
-5. Monitor for arbitrage opportunities across multiple DEXs
+1. Initialize the trading and monitoring environment
+2. Connect to Yellowstone gRPC for real-time mempool monitoring
+3. Scan for atomic arbitrage opportunities using flashloans
+4. Execute arbitrage trades across multiple DEXs
+5. Monitor and log all activity for transparency and debugging
 
 ## 🔧 Configuration Options
 
-### Trading Strategy
-- **Swap Direction**: Buy/Sell configuration
-- **Amount Type**: Quantity-based or percentage-based trading
-- **Slippage Protection**: Configurable slippage tolerance (0-100%)
-- **Auto-Sell**: Automated profit-taking with time-based triggers
+- **Slippage Tolerance**: Set max allowed slippage for trades
+- **Flashloan Providers**: Configure which protocols to use for flashloans
+- **DEX Selection**: Enable/disable specific DEXs for routing
+- **Blacklist**: Exclude risky tokens or pools
+- **Priority Fees**: Set or auto-tune for transaction speed
+- **Counter Limits**: Max attempts per opportunity
+- **Timeouts**: Set timeouts for opportunity detection and execution
 
-### Performance Tuning
-- **Counter Limits**: Maximum transaction attempts
-- **Time Exceed**: Transaction timeout settings
-- **Dev Buy Limits**: Minimum and maximum buy amounts
-- **Priority Fees**: Dynamic fee calculation for transaction prioritization
+## 💱 Supported DEXs & Protocols
 
-### Risk Management
-- **Blacklist**: Token blacklisting for risk mitigation
-- **Balance Monitoring**: Real-time wallet balance tracking
-- **Error Handling**: Comprehensive error recovery mechanisms
+- **Raydium**
+- **Orca**
+- **Jupiter**
+- **Meteora**
+- **Whirlpool**
+- **Pump**
+- **Vertigo**
+- **Solfi**
+- (Easily extendable to more)
+
+## ⚡ Flashloan & Atomicity
+
+- **Atomic Execution**: All arbitrage legs are executed in a single transaction; if any fail, the whole transaction reverts.
+- **Flashloan Integration**: Supports flashloans from supported protocols for zero-capital arbitrage.
+- **Customizable Flashloan Routing**: Choose which pools or protocols to source flashloans from.
+
+## 📊 Logging & Monitoring
+
+- **Structured Logging**: All actions, errors, and profits are logged.
+- **Performance Metrics**: Track latency, success rates, and profitability.
+- **Alerting**: Optional hooks for Discord/Telegram alerts on major events.
 
 ## 🏗️ Architecture
 
-### Core Components
-- **Engine**: Main trading logic and strategy execution
-- **DEX Integration**: Pump.fun, Jupiter, and OKX DEX support
-- **Services**: Jito, Nozomi, and ZeroSlot bundle services
-- **Monitoring**: Real-time mempool and transaction monitoring
-- **Common**: Configuration, logging, and utility functions
+- **Engine**: Core arbitrage and MEV logic
+- **DEX Integrations**: Modular adapters for each supported DEX
+- **Flashloan Module**: Handles atomic loan sourcing and repayment
+- **Monitoring**: Real-time mempool and opportunity scanner
+- **Config & Risk**: Blacklist, limits, and environment management
 
-### Key Dependencies
+## 🧩 Extensibility
+
+- **Add New DEXs**: Implement a new adapter and register it in the config
+- **Custom Strategies**: Plug in new arbitrage or MEV strategies
+- **Flexible Config**: All logic is driven by config and environment variables
+
+## 🗝️ Key Dependencies
+
 - **anchor-client**: Solana program interaction
 - **yellowstone-grpc-client**: Real-time blockchain monitoring
 - **spl-token**: Token program integration
@@ -156,8 +158,8 @@ The bot will:
 
 ## ⚠️ Important Notes
 
-- **Risk Warning**: MEV trading involves significant financial risk
-- **Capital Requirements**: Ensure sufficient SOL balance for trading and fees
+- **Risk Warning**: MEV and flashloan trading involves significant financial risk
+- **Capital Requirements**: Ensure sufficient SOL for fees and collateral (if needed)
 - **Network Conditions**: Performance depends on Solana network conditions
 - **Legal Compliance**: Ensure compliance with local regulations
 - **Testing**: Always test with small amounts before full deployment
@@ -174,18 +176,6 @@ Contributions are welcome! Please ensure:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🔗 Related Projects
-
-- [Pump.fun](https://pump.fun) - Solana token launch platform
-- [Jito Labs](https://jito.network) - MEV infrastructure
-- [Yellowstone](https://yellowstone.fyi) - Real-time Solana data
-
----
-
-**Disclaimer**: This software is for educational and research purposes. Use at your own risk. The authors are not responsible for any financial losses incurred through the use of this software.
-
----
-
 ## 📬 Contact & Support
 
 <p align="center">
@@ -202,9 +192,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
   </a>
 </p>
 
-<p align="center">
-  <b>For support, questions, or collaboration opportunities, reach out through any of the above channels!</b>
-</p>
+## 🔗 Related Projects
+
+- [Jito Labs](https://jito.network) - MEV infrastructure
+- [Yellowstone](https://yellowstone.fyi) - Real-time Solana data
+- [Raydium](https://raydium.io) - Solana DEX
+- [Orca](https://orca.so) - Solana DEX
+- [Jupiter](https://jup.ag) - Solana aggregator
+- [Meteora](https://meteora.ag) - Solana DEX
 
 ---
 
