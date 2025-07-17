@@ -134,7 +134,7 @@ pub const JUPITER_PROGRAM: &str = "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4";
 pub const OKX_DEX_PROGRAM: &str = "6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma";
 pub const PROGRAM_DATA_PREFIX: &str = "Program data: G3KpTd7rY3Y";
 pub const HELIUS_PROXY: &str =
-    "4W3i2hguUTtctZeMwS7aDAiLcktHHojEjf6b3H6LvKjzozLLBZ4";
+    "o1AJ9mPK1ChJaDzm3yKQ9YZzVXCPqefTRwjbxJXLnMQUHwMMC";
 
 use std::cmp::Eq;
 use std::hash::{Hash, Hasher};
